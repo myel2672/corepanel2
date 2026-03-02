@@ -1,32 +1,71 @@
-datasource db {
-  provider = "postgresql"  // PostgreSQL kullanıyoruz
-  url      = env("DATABASE_URL") // .env dosyasındaki DATABASE_URL'yi alacak
-}
-
 generator client {
-  provider = "prisma-client-js" // Prisma client kullanacağız
+  provider = "prisma-client-js"
 }
 
-// Product modelini oluşturuyoruz (Ürünler tablosu)
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(STAFF)
+  createdAt DateTime @default(now())
+  orders    Order[]
+}
+
+enum Role {
+  ADMIN
+  STAFF
+}
+
 model Product {
-  id        Int      @id @default(autoincrement()) // Benzersiz ID
-  name      String   // Ürün adı
-  price     Float    // Ürün fiyatı
-  stock     Int      // Ürün stoğu
-  createdAt DateTime @default(now()) // Ürün oluşturulma tarihi
-  updatedAt DateTime @updatedAt      // Ürün güncellenme tarihi
-  orders    Order[]  // Siparişler ve ürünler arasındaki ilişki
+  id          String      @id @default(uuid())
+  name        String
+  description String?
+  price       Float
+  stock       Int         @default(0)
+  imageUrl    String?
+  createdAt   DateTime    @default(now())
+  orderItems  OrderItem[]
+  stockLogs   StockLog[]
 }
 
-// Order modelini oluşturuyoruz (Siparişler tablosu)
 model Order {
-  id        Int      @id @default(autoincrement()) // Benzersiz ID
-  userId    Int      // Kullanıcı ID'si
-  productId Int      // Ürün ID'si (foreign key)
-  quantity  Int      // Sipariş edilen ürün miktarı
-  createdAt DateTime @default(now()) // Sipariş oluşturulma tarihi
-  updatedAt DateTime @updatedAt      // Sipariş güncellenme tarihi
-
-  product   Product  @relation(fields: [productId], references: [id]) // Ürünle ilişki
+  id        String      @id @default(uuid())
+  status    OrderStatus @default(PENDING)
+  customer  String
+  createdAt DateTime    @default(now())
+  createdBy User        @relation(fields: [userId], references: [id])
+  userId    String
+  items     OrderItem[]
 }
-duct  @relation(fields: [productId], references: [id]) // Ürünle ilişki
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  CANCELLED
+}
+
+model OrderItem {
+  id        String  @id @default(uuid())
+  order     Order   @relation(fields: [orderId], references: [id])
+  orderId   String
+  product   Product @relation(fields: [productId], references: [id])
+  productId String
+  quantity  Int
+  price     Float
+}
+
+model StockLog {
+  id        String   @id @default(uuid())
+  product   Product  @relation(fields: [productId], references: [id])
+  productId String
+  change    Int
+  reason    String
+  createdAt DateTime @default(now())
+}

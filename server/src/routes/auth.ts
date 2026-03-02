@@ -9,7 +9,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
 
 // REGISTER
 router.post("/register", async (req, res) => {
-  const { name, email, password, role } = req.body;
+  const { name, email, password, role, businessId } = req.body;
 
   try {
     const existingUser = await prisma.user.findUnique({
@@ -27,7 +27,8 @@ router.post("/register", async (req, res) => {
         name,
         email,
         password: hashedPassword,
-        role: role || "USER",
+        role: role || "STAFF",
+        businessId: businessId ?? null,
       },
     });
 
@@ -57,7 +58,7 @@ router.post("/login", async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: user.id, role: user.role },
+      { id: user.id, role: user.role, businessId: user.businessId },
       JWT_SECRET,
       { expiresIn: "7d" }
     );

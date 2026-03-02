@@ -3,8 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 model User {
@@ -12,17 +12,11 @@ model User {
   name      String
   email     String   @unique
   password  String
-  role      Role     @default(STAFF)
+  role      String   @default("STAFF")
   business  Business? @relation(fields: [businessId], references: [id])
   businessId String?
   createdAt DateTime @default(now())
   orders    Order[]
-}
-
-enum Role {
-  MAIN_ADMIN
-  BUSINESS_ADMIN
-  STAFF
 }
 
 model Product {
@@ -42,7 +36,7 @@ model Product {
 
 model Order {
   id        String      @id @default(uuid())
-  status    OrderStatus @default(PENDING)
+  status    String      @default("PENDING")
   customer  String
   createdAt DateTime    @default(now())
   createdBy User        @relation(fields: [userId], references: [id])
@@ -50,15 +44,6 @@ model Order {
   items     OrderItem[]
   business  Business?   @relation(fields: [businessId], references: [id])
   businessId String?
-}
-
-enum OrderStatus {
-  PENDING
-  PROCESSING
-  SHIPPED
-  DELIVERED
-  COMPLETED
-  CANCELLED
 }
 
 model OrderItem {
@@ -78,6 +63,8 @@ model StockLog {
   change    Int
   reason    String
   createdAt DateTime @default(now())
+  business  Business? @relation(fields: [businessId], references: [id])
+  businessId String?
 }
 
 model Business {
@@ -90,6 +77,7 @@ model Business {
   products  Product[]
   orders    Order[]
   sales     Sale[]
+  stockLogs StockLog[]
 }
 
 model Sale {

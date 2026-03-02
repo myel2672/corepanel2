@@ -2,9 +2,13 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import productRoutes from "./routes/products";
+import dashboardRouter from './routes/dashboard';
 import authRoutes from "./routes/auth";
 import orderRoutes from "./routes/orders";
+import businessRoutes from "./routes/businesses";
 import { errorHandler } from "./middleware/errorHandler";
+import salesRoutes from "./routes/sales";
+import reportsRoutes from "./routes/reports";
 
 dotenv.config();
 
@@ -19,7 +23,11 @@ app.use(express.json());
 
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
+app.use('/api/dashboard', dashboardRouter);
 app.use("/api/orders", orderRoutes);
+app.use("/api/businesses", businessRoutes);
+app.use("/api/sales", salesRoutes);
+app.use("/api/reports", reportsRoutes);
 
 app.get("/", (req, res) => {
   res.send("API is running");

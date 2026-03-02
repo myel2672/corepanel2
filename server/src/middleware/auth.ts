@@ -4,14 +4,14 @@ import jwt from "jsonwebtoken";
 const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
 
 export interface AuthRequest extends Request {
-  user?: { id: string; role: string };
+  user?: { id: string; role: string; businessId?: string };
 }
 
 export const authenticate = (req: AuthRequest, res: Response, next: NextFunction) => {
   const token = req.headers.authorization?.split(" ")[1];
   if (!token) return res.status(401).json({ message: "No token" });
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { id: string; role: string };
+    const decoded = jwt.verify(token, JWT_SECRET) as { id: string; role: string; businessId?: string };
     req.user = decoded;
     next();
   } catch {
@@ -20,6 +20,14 @@ export const authenticate = (req: AuthRequest, res: Response, next: NextFunction
 };
 
 export const requireAdmin = (req: AuthRequest, res: Response, next: NextFunction) => {
-  if (req.user?.role !== "ADMIN") return res.status(403).json({ message: "Admin only" });
+  // allow MAIN_ADMIN or BUSINESS_ADMIN
+  if (req.user?.role !== "MAIN_ADMIN" && req.user?.role !== "BUSINESS_ADMIN") {
+    return res.status(403).json({ message: "Admin only" });
+  }
+  next();
+};
+
+export const requireMainAdmin = (req: AuthRequest, res: Response, next: NextFunction) => {
+  if (req.user?.role !== "MAIN_ADMIN") return res.status(403).json({ message: "Main admin only" });
   next();
 };

@@ -13,19 +13,32 @@ export interface Business {
   isApproved: boolean;
 }
 
+export interface Sale {
+  id: string;
+  businessId: string;
+  productId?: string;
+  description?: string;
+  category?: string;
+  quantity: number;
+  unitPrice: number;
+  unitCost?: number;
+  total: number;
+  date: string;
+}
+
 export interface Product {
   id: string;
   name: string;
   price: number;
+  costPrice?: number;
   stock: number;
   description?: string;
-  costPrice?: number;
 }
 
 export interface Order {
   id: string;
   status: string;
-  customer: string;  // ← bu satırı ekle
+  customer: string;
   total: number;
   createdAt: string;
   items: OrderItem[];
@@ -37,5 +50,3 @@ export interface OrderItem {
   price: number;
   product: Product;
 }
- 
-  

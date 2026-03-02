@@ -2,7 +2,9 @@
   "name": "corepanel-server",
   "version": "1.0.0",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only src/app.ts"
+    "dev": "ts-node-dev --respawn --transpile-only src/app.ts",
+    "smoke": "node scripts/smokeTest.js",
+    "e2e": "node scripts/e2eTest.js"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

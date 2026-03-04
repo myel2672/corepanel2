@@ -3,182 +3,227 @@ import api from '../api/axios';
 import type { Order, Product } from '../types';
 import { useAuthStore } from '../store/authStore';
 
+const styles = `
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap');
+  .op { font-family: 'Nunito', sans-serif; color: rgba(255,255,255,0.85); }
+  .op-title { font-size: 26px; font-weight: 800; color: #fff; letter-spacing: -0.5px; margin-bottom: 8px; }
+  .op-subtitle { font-size: 14px; color: rgba(255,255,255,0.3); margin-bottom: 28px; }
+  .op-form {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+  }
+  .op-field { display: flex; flex-direction: column; gap: 6px; }
+  .op-label { font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: rgba(255,255,255,0.3); }
+  .op-input, .op-select {
+    padding: 10px 14px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    color: rgba(255,255,255,0.85);
+    font-size: 14px;
+    font-family: 'Nunito', sans-serif;
+    outline: none;
+    transition: all 0.15s;
+  }
+  .op-input:focus, .op-select:focus { border-color: rgba(99,102,241,0.5); background: rgba(99,102,241,0.08); }
+  .op-input::placeholder { color: rgba(255,255,255,0.2); }
+  .op-select option { background: #1a1a2e; color: #fff; }
+  .op-btn {
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #6366f1, #7c3aed);
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: 'Nunito', sans-serif;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .op-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(99,102,241,0.3); }
+  .op-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 16px; overflow: hidden; }
+  .op-th { padding: 12px 16px; text-align: left; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: rgba(255,255,255,0.25); border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .op-td { padding: 14px 16px; font-size: 14px; color: rgba(255,255,255,0.7); border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .op-tr:hover .op-td { background: rgba(255,255,255,0.02); }
+  .op-empty { padding: 40px; text-align: center; color: rgba(255,255,255,0.2); font-size: 14px; }
+  .op-status {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    font-family: 'Nunito', sans-serif;
+  }
+  .op-loading { display: flex; align-items: center; justify-content: center; height: 200px; color: rgba(255,255,255,0.3); font-size: 14px; }
+`;
+
+const STATUS_LABELS: Record<string, string> = {
+  PENDING: 'Bekliyor',
+  PROCESSING: 'İşlemde',
+  SHIPPED: 'Kargolandı',
+  DELIVERED: 'Teslim Edildi',
+  COMPLETED: 'Tamamlandı',
+  CANCELLED: 'İptal',
+};
+
+const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
+  PENDING: { bg: 'rgba(251,146,60,0.15)', color: '#fb923c' },
+  PROCESSING: { bg: 'rgba(99,102,241,0.15)', color: '#818cf8' },
+  SHIPPED: { bg: 'rgba(167,139,250,0.15)', color: '#a78bfa' },
+  DELIVERED: { bg: 'rgba(52,211,153,0.15)', color: '#34d399' },
+  COMPLETED: { bg: 'rgba(52,211,153,0.15)', color: '#34d399' },
+  CANCELLED: { bg: 'rgba(239,68,68,0.15)', color: '#f87171' },
+};
+
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const user = useAuthStore((s) => s.user);
-
-  // Yeni sipariş formu
   const [customer, setCustomer] = useState('');
   const [selectedProduct, setSelectedProduct] = useState('');
   const [quantity, setQuantity] = useState('');
 
+  const isAdmin = user?.role === 'MAIN_ADMIN' || user?.role === 'BUSINESS_ADMIN';
+
   const fetchOrders = async () => {
-    if (user?.role !== 'ADMIN') {
-      setLoading(false);
-      return;
-    }
+    if (!isAdmin) { setLoading(false); return; }
     try {
       const res = await api.get('/orders');
       setOrders(res.data);
-    } catch {
-      console.error('Siparisler yuklenemedi');
-    } finally {
-      setLoading(false);
-    }
+    } catch { console.error('Siparişler yüklenemedi'); }
+    finally { setLoading(false); }
   };
 
   const fetchProducts = async () => {
     try {
       const res = await api.get('/products');
       setProducts(res.data);
-    } catch {
-      console.error('Urunler yuklenemedi');
-    }
+    } catch { console.error('Ürünler yüklenemedi'); }
   };
 
-  useEffect(() => {
-    fetchOrders();
-    fetchProducts();
-  }, []);
+  useEffect(() => { fetchOrders(); fetchProducts(); }, []);
 
   const handleAddOrder = async () => {
     if (!customer || !selectedProduct || !quantity) return;
     const product = products.find(p => p.id === selectedProduct);
     if (!product) return;
-
     try {
       await api.post('/orders', {
         customer,
-        items: [{
-          productId: product.id,
-          quantity: parseInt(quantity),
-          price: product.price,
-        }],
+        items: [{ productId: product.id, quantity: parseInt(quantity), price: product.price }],
       });
-      setCustomer('');
-      setSelectedProduct('');
-      setQuantity('');
+      setCustomer(''); setSelectedProduct(''); setQuantity('');
       fetchOrders();
-    } catch {
-      console.error('Siparis eklenemedi');
-    }
+    } catch { console.error('Sipariş eklenemedi'); }
   };
 
   const handleStatusChange = async (id: string, status: string) => {
     try {
       await api.put(`/orders/${id}/status`, { status });
       fetchOrders();
-    } catch {
-      console.error('Durum guncellenemedi');
-    }
+    } catch { console.error('Durum güncellenemedi'); }
   };
 
-  const statusColor: Record<string, string> = {
-    PENDING: '#ed8936',
-    PROCESSING: '#3182ce',
-    SHIPPED: '#805ad5',
-    DELIVERED: '#2f855a',
-    COMPLETED: '#38a169',
-    CANCELLED: '#e53e3e',
-  };
-
-  if (loading) return <div>Yukleniyor...</div>;
+  if (loading) return (
+    <>
+      <style>{styles}</style>
+      <div className="op-loading">Yükleniyor...</div>
+    </>
+  );
 
   return (
-    <div>
-      <h2>Siparisler</h2>
-      {user?.role !== 'ADMIN' && (
-        <div style={{ marginBottom: 12, color: '#666' }}>Sadece sipariş oluşturabilirsiniz.</div>
-      )}
-      {/* Yeni Sipariş Formu */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
-        <input
-          placeholder="Musteri adi"
-          value={customer}
-          onChange={e => setCustomer(e.target.value)}
-          style={{ padding: 8 }}
-        />
-        <select
-          value={selectedProduct}
-          onChange={e => setSelectedProduct(e.target.value)}
-          style={{ padding: 8 }}
-        >
-          <option value="">Urun sec</option>
-          {products.map(p => (
-            <option key={p.id} value={p.id}>
-              {p.name} - {p.price} TL (Stok: {p.stock})
-            </option>
-          ))}
-        </select>
-        <input
-          placeholder="Adet"
-          value={quantity}
-          onChange={e => setQuantity(e.target.value)}
-          style={{ padding: 8, width: 80 }}
-          type="number"
-        />
-        <button
-          onClick={handleAddOrder}
-          style={{ padding: '8px 16px', background: '#3182ce', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}
-        >
-          Siparis Olustur
-        </button>
-      </div>
+    <>
+      <style>{styles}</style>
+      <div className="op">
+        <div className="op-title">Siparişler</div>
+        <div className="op-subtitle">
+          {isAdmin ? `${orders.length} sipariş listeleniyor` : 'Yeni sipariş oluşturun'}
+        </div>
 
-      {/* Sipariş Listesi (sadece admin) */}
-      {user?.role === 'ADMIN' && (
-        <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff' }}>
-        <thead>
-          <tr style={{ background: '#eee' }}>
-            <th style={{ padding: 12, textAlign: 'left' }}>Musteri</th>
-            <th style={{ padding: 12, textAlign: 'left' }}>Urunler</th>
-            <th style={{ padding: 12, textAlign: 'left' }}>Toplam</th>
-            <th style={{ padding: 12, textAlign: 'left' }}>Tarih</th>
-            <th style={{ padding: 12, textAlign: 'left' }}>Durum</th>
-          </tr>
-        </thead>
-        <tbody>
-          {orders.map(order => {
-            const total = order.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-            return (
-              <tr key={order.id} style={{ borderBottom: '1px solid #eee' }}>
-                <td style={{ padding: 12 }}>{order.customer}</td>
-                <td style={{ padding: 12 }}>
-                  {order.items.map(item => (
-                    <div key={item.id}>{item.product.name} x{item.quantity}</div>
-                  ))}
-                </td>
-                <td style={{ padding: 12 }}>{total.toFixed(2)} TL</td>
-                <td style={{ padding: 12 }}>{new Date(order.createdAt).toLocaleDateString('tr-TR')}</td>
-                <td style={{ padding: 12 }}>
-                  <select
-                    value={order.status}
-                    onChange={e => handleStatusChange(order.id, e.target.value)}
-                    style={{
-                      padding: '4px 8px',
-                      background: statusColor[order.status] || '#gray',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: 4,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <option value="PENDING">Bekliyor</option>
-                    <option value="PROCESSING">Islemde</option>
-                    <option value="SHIPPED">Kargolandı</option>
-                    <option value="DELIVERED">Teslim Edildi</option>
-                    <option value="COMPLETED">Tamamlandi</option>
-                    <option value="CANCELLED">Iptal</option>
-                  </select>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-        </table>
-      )}
-    </div>
+        <div className="op-form">
+          <div className="op-field">
+            <span className="op-label">Müşteri Adı</span>
+            <input className="op-input" style={{ width: 180 }} placeholder="Müşteri adı" value={customer} onChange={e => setCustomer(e.target.value)} />
+          </div>
+          <div className="op-field">
+            <span className="op-label">Ürün Seç</span>
+            <select className="op-select" style={{ width: 220 }} value={selectedProduct} onChange={e => setSelectedProduct(e.target.value)}>
+              <option value="">— Ürün seçin —</option>
+              {products.map(p => (
+                <option key={p.id} value={p.id}>{p.name} — {p.price} ₺ (Stok: {p.stock})</option>
+              ))}
+            </select>
+          </div>
+          <div className="op-field">
+            <span className="op-label">Adet</span>
+            <input className="op-input" style={{ width: 100 }} placeholder="1" type="number" value={quantity} onChange={e => setQuantity(e.target.value)} />
+          </div>
+          <button className="op-btn" onClick={handleAddOrder}>+ Sipariş Oluştur</button>
+        </div>
+
+        {isAdmin && (
+          <div className="op-card">
+            {orders.length === 0 ? (
+              <div className="op-empty">Henüz sipariş bulunmuyor</div>
+            ) : (
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr>
+                    <th className="op-th">Müşteri</th>
+                    <th className="op-th">Ürünler</th>
+                    <th className="op-th">Toplam</th>
+                    <th className="op-th">Tarih</th>
+                    <th className="op-th">Durum</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {orders.map(order => {
+                    const total = order.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+                    const sc = STATUS_COLORS[order.status] || { bg: 'rgba(255,255,255,0.1)', color: '#fff' };
+                    return (
+                      <tr key={order.id} className="op-tr">
+                        <td className="op-td" style={{ color: '#fff', fontWeight: 600 }}>{order.customer}</td>
+                        <td className="op-td">
+                          {order.items.map(item => (
+                            <div key={item.id} style={{ fontSize: 13 }}>
+                              {item.product.name} <span style={{ color: 'rgba(255,255,255,0.3)' }}>×{item.quantity}</span>
+                            </div>
+                          ))}
+                        </td>
+                        <td className="op-td" style={{ color: '#a78bfa', fontWeight: 700 }}>{total.toFixed(2)} ₺</td>
+                        <td className="op-td" style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>
+                          {new Date(order.createdAt).toLocaleDateString('tr-TR')}
+                        </td>
+                        <td className="op-td">
+                          <select
+                            className="op-status"
+                            value={order.status}
+                            onChange={e => handleStatusChange(order.id, e.target.value)}
+                            style={{ background: sc.bg, color: sc.color }}
+                          >
+                            {Object.entries(STATUS_LABELS).map(([val, label]) => (
+                              <option key={val} value={val}>{label}</option>
+                            ))}
+                          </select>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
+      </div>
+    </>
   );
 }

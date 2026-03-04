@@ -3,6 +3,111 @@ import api from '../api/axios';
 import type { Product } from '../types';
 import { useAuthStore } from '../store/authStore';
 
+const styles = `
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap');
+  .pp { font-family: 'Nunito', sans-serif; color: rgba(255,255,255,0.85); }
+  .pp-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
+  .pp-title { font-size: 26px; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
+  .pp-add-form {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+  }
+  .pp-field { display: flex; flex-direction: column; gap: 6px; }
+  .pp-label { font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: rgba(255,255,255,0.3); }
+  .pp-input {
+    padding: 10px 14px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    color: rgba(255,255,255,0.85);
+    font-size: 14px;
+    font-family: 'Nunito', sans-serif;
+    outline: none;
+    transition: all 0.15s;
+    width: 140px;
+  }
+  .pp-input:focus { border-color: rgba(99,102,241,0.5); background: rgba(99,102,241,0.08); }
+  .pp-input::placeholder { color: rgba(255,255,255,0.2); }
+  .pp-btn {
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #6366f1, #7c3aed);
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: 'Nunito', sans-serif;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .pp-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(99,102,241,0.3); }
+  .pp-btn-sm {
+    padding: 6px 14px;
+    border: none;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: 'Nunito', sans-serif;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .pp-btn-edit { background: rgba(99,102,241,0.15); color: #a78bfa; border: 1px solid rgba(99,102,241,0.2); }
+  .pp-btn-edit:hover { background: rgba(99,102,241,0.25); }
+  .pp-btn-save { background: rgba(52,211,153,0.15); color: #34d399; border: 1px solid rgba(52,211,153,0.2); }
+  .pp-btn-save:hover { background: rgba(52,211,153,0.25); }
+  .pp-btn-cancel { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.4); border: 1px solid rgba(255,255,255,0.1); }
+  .pp-btn-delete { background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.2); }
+  .pp-btn-delete:hover { background: rgba(239,68,68,0.2); }
+  .pp-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .pp-th {
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.25);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .pp-td {
+    padding: 14px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.7);
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .pp-tr:hover .pp-td { background: rgba(255,255,255,0.02); }
+  .pp-stock-low { color: #f87171; font-weight: 700; }
+  .pp-stock-ok { color: #34d399; font-weight: 700; }
+  .pp-edit-input {
+    padding: 6px 10px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(99,102,241,0.3);
+    border-radius: 8px;
+    color: rgba(255,255,255,0.85);
+    font-size: 13px;
+    font-family: 'Nunito', sans-serif;
+    outline: none;
+    width: 100%;
+  }
+  .pp-actions { display: flex; gap: 6px; }
+  .pp-empty { padding: 40px; text-align: center; color: rgba(255,255,255,0.2); font-size: 14px; }
+  .pp-loading { display: flex; align-items: center; justify-content: center; height: 200px; color: rgba(255,255,255,0.3); font-size: 14px; }
+  .pp-badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+  .pp-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 16px; overflow: hidden; }
+`;
+
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -17,12 +122,14 @@ export default function ProductsPage() {
   const [editCostPrice, setEditCostPrice] = useState('');
   const [editStock, setEditStock] = useState('');
 
+  const canEdit = user?.role === 'BUSINESS_ADMIN' || user?.role === 'MAIN_ADMIN';
+
   const fetchProducts = async () => {
     try {
       const res = await api.get('/products');
       setProducts(res.data);
     } catch {
-      console.error('Urunler yuklenemedi');
+      console.error('Ürünler yüklenemedi');
     } finally {
       setLoading(false);
     }
@@ -39,20 +146,17 @@ export default function ProductsPage() {
         costPrice: parseFloat(costPrice || '0'),
         stock: parseInt(stock),
       });
-      setName(''); setPrice(''); setStock('');
+      setName(''); setPrice(''); setCostPrice(''); setStock('');
       fetchProducts();
-    } catch {
-      console.error('Urun eklenemedi');
-    }
+    } catch { console.error('Ürün eklenemedi'); }
   };
 
   const handleDelete = async (id: string) => {
+    if (!confirm('Bu ürünü silmek istediğinize emin misiniz?')) return;
     try {
       await api.delete(`/products/${id}`);
       fetchProducts();
-    } catch {
-      console.error('Urun silinemedi');
-    }
+    } catch { console.error('Ürün silinemedi'); }
   };
 
   const startEdit = (p: Product) => {
@@ -61,10 +165,6 @@ export default function ProductsPage() {
     setEditPrice(String(p.price));
     setEditCostPrice(String(p.costPrice ?? ''));
     setEditStock(String(p.stock));
-  };
-
-  const cancelEdit = () => {
-    setEditingId(null);
   };
 
   const saveEdit = async (id: string) => {
@@ -77,89 +177,117 @@ export default function ProductsPage() {
       });
       setEditingId(null);
       fetchProducts();
-    } catch {
-      console.error('Urun guncellenemedi');
-    }
+    } catch { console.error('Ürün güncellenemedi'); }
   };
 
-  if (loading) return <div>Yukleniyor...</div>;
+  if (loading) return (
+    <>
+      <style>{styles}</style>
+      <div className="pp-loading">Yükleniyor...</div>
+    </>
+  );
 
   return (
-    <div>
-      <h2>Urunler</h2>
-
-      {user?.role === 'ADMIN' && (
-        <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
-          <input placeholder="Urun adi" value={name} onChange={e => setName(e.target.value)} style={{ padding: 8 }} />
-          <input placeholder="Fiyat" value={price} onChange={e => setPrice(e.target.value)} style={{ padding: 8, width: 100 }} />
-          <input placeholder="Maliyet (cost)" value={costPrice} onChange={e => setCostPrice(e.target.value)} style={{ padding: 8, width: 120 }} />
-          <input placeholder="Stok" value={stock} onChange={e => setStock(e.target.value)} style={{ padding: 8, width: 80 }} />
-          <button onClick={handleAdd} style={{ padding: '8px 16px', background: '#3182ce', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>
-            Ekle
-          </button>
+    <>
+      <style>{styles}</style>
+      <div className="pp">
+        <div className="pp-header">
+          <div className="pp-title">Ürünler</div>
+          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)' }}>{products.length} ürün</div>
         </div>
-      )}
 
-      <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff' }}>
-        <thead>
-          <tr style={{ background: '#eee' }}>
-            <th style={{ padding: 12, textAlign: 'left' }}>Ad</th>
-            <th style={{ padding: 12, textAlign: 'left' }}>Fiyat</th>
-            <th style={{ padding: 12, textAlign: 'left' }}>Maliyet</th>
-            <th style={{ padding: 12, textAlign: 'left' }}>Stok</th>
-            <th style={{ padding: 12 }}></th>
-          </tr>
-        </thead>
-        <tbody>
-          {products.map(p => (
-            <tr key={p.id} style={{ borderBottom: '1px solid #eee' }}>
-              <td style={{ padding: 12 }}>
-                {editingId === p.id ? (
-                  <input value={editName} onChange={e => setEditName(e.target.value)} />
-                ) : (
-                  p.name
-                )}
-              </td>
-              <td style={{ padding: 12 }}>
-                {editingId === p.id ? (
-                  <input value={editPrice} onChange={e => setEditPrice(e.target.value)} style={{ width: 80 }} />
-                ) : (
-                  `${p.price} TL`
-                )}
-              </td>
-              <td style={{ padding: 12 }}>
-                {editingId === p.id ? (
-                  <input value={editCostPrice} onChange={e => setEditCostPrice(e.target.value)} style={{ width: 100 }} />
-                ) : (
-                  p.costPrice ? `${p.costPrice} TL` : '-'
-                )}
-              </td>
-              <td style={{ padding: 12 }}>
-                {editingId === p.id ? (
-                  <input value={editStock} onChange={e => setEditStock(e.target.value)} style={{ width: 60 }} />
-                ) : (
-                  p.stock
-                )}
-              </td>
-              <td style={{ padding: 12 }}>
-                {user?.role === 'ADMIN' && (
-                  editingId === p.id ? (
-                    <>
-                      <button onClick={() => saveEdit(p.id)} style={{ marginRight: 8, background: '#38a169', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: 4, cursor: 'pointer' }}>Kaydet</button>
-                      <button onClick={cancelEdit} style={{ background: '#a0aec0', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: 4, cursor: 'pointer' }}>Iptal</button>
-                    </>
-                  ) : (
-                    <>
-                      <button onClick={() => startEdit(p)} style={{ marginRight: 8, background: '#3182ce', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: 4, cursor: 'pointer' }}>Düzenle</button>
-                      <button onClick={() => handleDelete(p.id)} style={{ background: '#e53e3e', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: 4, cursor: 'pointer' }}>Sil</button>
-                    </>
-                  )
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+        {canEdit && (
+          <div className="pp-add-form">
+            <div className="pp-field">
+              <span className="pp-label">Ürün Adı</span>
+              <input className="pp-input" style={{ width: 180 }} placeholder="Ürün adı" value={name} onChange={e => setName(e.target.value)} />
+            </div>
+            <div className="pp-field">
+              <span className="pp-label">Fiyat (₺)</span>
+              <input className="pp-input" placeholder="0.00" value={price} onChange={e => setPrice(e.target.value)} type="number" />
+            </div>
+            <div className="pp-field">
+              <span className="pp-label">Maliyet (₺)</span>
+              <input className="pp-input" placeholder="0.00" value={costPrice} onChange={e => setCostPrice(e.target.value)} type="number" />
+            </div>
+            <div className="pp-field">
+              <span className="pp-label">Stok</span>
+              <input className="pp-input" style={{ width: 100 }} placeholder="0" value={stock} onChange={e => setStock(e.target.value)} type="number" />
+            </div>
+            <button className="pp-btn" onClick={handleAdd}>+ Ürün Ekle</button>
+          </div>
+        )}
+
+        <div className="pp-card">
+          {products.length === 0 ? (
+            <div className="pp-empty">Henüz ürün eklenmemiş</div>
+          ) : (
+            <table className="pp-table">
+              <thead>
+                <tr>
+                  <th className="pp-th">Ürün Adı</th>
+                  <th className="pp-th">Fiyat</th>
+                  <th className="pp-th">Maliyet</th>
+                  <th className="pp-th">Kâr Marjı</th>
+                  <th className="pp-th">Stok</th>
+                  {canEdit && <th className="pp-th">İşlemler</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {products.map(p => {
+                  const margin = p.costPrice ? (((p.price - p.costPrice) / p.price) * 100).toFixed(0) : null;
+                  return (
+                    <tr key={p.id} className="pp-tr">
+                      <td className="pp-td" style={{ color: '#fff', fontWeight: 600 }}>
+                        {editingId === p.id
+                          ? <input className="pp-edit-input" value={editName} onChange={e => setEditName(e.target.value)} />
+                          : p.name}
+                      </td>
+                      <td className="pp-td">
+                        {editingId === p.id
+                          ? <input className="pp-edit-input" value={editPrice} onChange={e => setEditPrice(e.target.value)} type="number" />
+                          : <span style={{ color: '#a78bfa', fontWeight: 700 }}>{p.price} ₺</span>}
+                      </td>
+                      <td className="pp-td">
+                        {editingId === p.id
+                          ? <input className="pp-edit-input" value={editCostPrice} onChange={e => setEditCostPrice(e.target.value)} type="number" />
+                          : p.costPrice ? `${p.costPrice} ₺` : <span style={{ color: 'rgba(255,255,255,0.2)' }}>—</span>}
+                      </td>
+                      <td className="pp-td">
+                        {margin
+                          ? <span style={{ color: '#34d399', fontWeight: 700 }}>%{margin}</span>
+                          : <span style={{ color: 'rgba(255,255,255,0.2)' }}>—</span>}
+                      </td>
+                      <td className="pp-td">
+                        {editingId === p.id
+                          ? <input className="pp-edit-input" style={{ width: 80 }} value={editStock} onChange={e => setEditStock(e.target.value)} type="number" />
+                          : <span className={p.stock < 5 ? 'pp-stock-low' : 'pp-stock-ok'}>{p.stock}</span>}
+                      </td>
+                      {canEdit && (
+                        <td className="pp-td">
+                          <div className="pp-actions">
+                            {editingId === p.id ? (
+                              <>
+                                <button className="pp-btn-sm pp-btn-save" onClick={() => saveEdit(p.id)}>Kaydet</button>
+                                <button className="pp-btn-sm pp-btn-cancel" onClick={() => setEditingId(null)}>İptal</button>
+                              </>
+                            ) : (
+                              <>
+                                <button className="pp-btn-sm pp-btn-edit" onClick={() => startEdit(p)}>Düzenle</button>
+                                <button className="pp-btn-sm pp-btn-delete" onClick={() => handleDelete(p.id)}>Sil</button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+    </>
   );
 }

@@ -8,9 +8,27 @@ interface AuthState {
   logout: () => void;
 }
 
+// Token'ı localStorage'dan al, user bilgisini JWT'den çöz
+function getUserFromToken(token: string | null): User | null {
+  if (!token) return null;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return {
+      id: payload.id,
+      name: payload.name,
+      email: payload.email,
+      role: payload.role,
+    } as User;
+  } catch {
+    return null;
+  }
+}
+
+const storedToken = localStorage.getItem('token');
+
 export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  token: localStorage.getItem('token'),
+  token: storedToken,
+  user: getUserFromToken(storedToken), // ← Sayfa yenilenince user kaybolmaz
   setAuth: (user, token) => {
     localStorage.setItem('token', token);
     set({ user, token });

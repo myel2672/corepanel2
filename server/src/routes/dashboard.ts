@@ -1,52 +1,105 @@
 import { Router } from "express";
 import { PrismaClient } from "@prisma/client";
-import { authenticate, requireAdmin, AuthRequest } from "../middleware/auth";
+import jwt from "jsonwebtoken";
 
 const router = Router();
 const prisma = new PrismaClient();
 
-// Summary: total sales, total orders, low stock, top products
-router.get("/summary", authenticate, requireAdmin, async (req: AuthRequest, res) => {
+// Basit authenticate middleware
+const authenticate = async (req: any, res: any, next: any) => {
   try {
-    const user = req.user as any;
-    const orderWhere: any = {};
-    if (user.role !== "MAIN_ADMIN") orderWhere.businessId = user.businessId;
-    const totalOrders = await prisma.order.count({ where: orderWhere });
+    const authHeader = req.headers["authorization"];
+    if (!authHeader) {
+      return res.status(401).json({ error: "No token provided" });
+    }
 
-    const totalSalesResult = await prisma.orderItem.aggregate({
-      _sum: { price: true },
+    const token = authHeader.split(" ")[1];
+    const decoded: any = jwt.verify(token, process.env.JWT_SECRET as string);
+
+    // Kullanıcıyı DB’den bul
+    const dbUser = await prisma.user.findUnique({
+      where: { id: decoded.id },
     });
-    // totalSales by summing price * quantity across items
-    const items = await prisma.orderItem.findMany({ where: { order: { businessId: orderWhere.businessId } }, select: { price: true, quantity: true, productId: true } });
-    const totalSales = items.reduce((s, it) => s + it.price * it.quantity, 0);
-    // totalCost by summing product.costPrice * quantity
-    const productIds = Array.from(new Set(items.map(i => i.productId)));
-    const products = await prisma.product.findMany({ where: { id: { in: productIds } }, select: { id: true, costPrice: true } } as any);
-    const costMap: Record<string, number> = {};
-    (products as any[]).forEach(p => { costMap[p.id] = (p as any).costPrice ?? 0; });
-    const totalCost = items.reduce((s, it) => s + (costMap[it.productId] || 0) * it.quantity, 0);
-    const profit = totalSales - totalCost;
 
-    const prodWhere: any = { stock: { lt: 5 } };
-    if (user.role !== "MAIN_ADMIN") prodWhere.businessId = user.businessId;
-    const lowStock = await prisma.product.findMany({ where: prodWhere, orderBy: { stock: 'asc' }, take: 10 });
+    if (!dbUser) {
+      return res.status(401).json({ error: "User not found" });
+    }
 
-    const topProducts = await prisma.orderItem.groupBy({
-      by: ['productId'],
-      where: { order: { businessId: orderWhere.businessId } },
-      _sum: { quantity: true },
-      orderBy: { _sum: { quantity: 'desc' } },
-      take: 5,
+    // req.user içine businessId dahil et
+    req.user = {
+      id: dbUser.id,
+      email: dbUser.email,
+      role: dbUser.role,
+      businessId: dbUser.businessId,
+    };
+
+    next();
+  } catch (error) {
+    console.error("Auth error:", error);
+    return res.status(401).json({ error: "Invalid token" });
+  }
+};
+
+router.get("/stats", authenticate, async (req: any, res) => {
+  try {
+    const user = req.user;
+    const businessId = user.businessId || null;
+
+    if (!businessId) {
+      return res.json({
+        todaySales: 0,
+        monthSales: 0,
+        ordersCount: 0,
+        productsCount: 0,
+      });
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+    const todaySales = await prisma.sale.aggregate({
+  _sum: { total: true },
+  where: businessId
+    ? {
+        businessId,
+        createdAt: { gte: today }
+      }
+    : {
+        createdAt: { gte: today }
+      }
+      });
+
+    const monthSales = await prisma.sale.aggregate({
+      _sum: { total: true },
+      where: businessId
+    ? {
+        businessId,
+        createdAt: { gte: startOfMonth }
+      }
+    : {
+        createdAt: { gte: startOfMonth }
+      }
+});
+
+    const ordersCount = await prisma.order.count({
+      where: { businessId: businessId },
     });
-    // fetch product names
-    const top = await Promise.all(topProducts.map(async (t) => {
-      const p = await prisma.product.findUnique({ where: { id: t.productId } });
-      return { product: p, sold: t._sum.quantity || 0 };
-    }));
 
-    res.json({ totalOrders, totalSales, totalCost, profit, lowStock, top });
-  } catch (err) {
-    res.status(500).json({ message: 'Dashboard error', error: err });
+    const productsCount = await prisma.product.count({
+  where: businessId ? { businessId } : {}
+});
+
+    res.json({
+      todaySales: todaySales._sum.total || 0,
+      monthSales: monthSales._sum.total || 0,
+      ordersCount,
+      productsCount,
+    });
+  } catch (error) {
+    console.error("Dashboard Error:", error);
+    res.status(500).json({ error: "Dashboard stats error" });
   }
 });
 

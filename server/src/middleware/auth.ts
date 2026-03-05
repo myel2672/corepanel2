@@ -20,8 +20,8 @@ export const authenticate = (req: AuthRequest, res: Response, next: NextFunction
 };
 
 export const requireAdmin = (req: AuthRequest, res: Response, next: NextFunction) => {
-  // allow MAIN_ADMIN or BUSINESS_ADMIN
-  if (req.user?.role !== "MAIN_ADMIN" && req.user?.role !== "BUSINESS_ADMIN") {
+  // allow MAIN_ADMIN or ADMIN
+  if (req.user?.role !== "MAIN_ADMIN" && req.user?.role !== "ADMIN") {
     return res.status(403).json({ message: "Admin only" });
   }
   next();

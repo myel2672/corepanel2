@@ -1,30 +1,32 @@
-// server/prisma/seed.ts
-// Çalıştırmak için: npx ts-node prisma/seed.ts
-
-import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
+import { PrismaClient, Role } from "@prisma/client";
+import bcrypt from "bcrypt";
 
 const prisma = new PrismaClient();
 
 async function main() {
-  const password = await bcrypt.hash('admin123', 10);
-
-  const admin = await prisma.user.upsert({
-    where: { email: 'admin@corepanel.com' },
-    update: {},
-    create: {
-      name: 'Ana Admin',
-      email: 'admin@corepanel.com',
-      password,
-      role: 'MAIN_ADMIN',
+  // Önce Business oluştur
+  const business = await prisma.business.create({
+    data: {
+      name: "Ana İşletme",
     },
   });
+  console.log("✅ Business oluşturuldu:", business.id);
 
-  console.log('✅ Admin kullanıcı oluşturuldu:', admin.email);
-  console.log('📧 Email: admin@corepanel.com');
-  console.log('🔑 Şifre: admin123');
+  // MAIN_ADMIN'i business'a bağlı oluştur
+  const hashedPassword = await bcrypt.hash("123456", 10);
+  await prisma.user.create({
+    data: {
+      email: "admin@corepanel.com",
+      password: hashedPassword,
+      role: Role.MAIN_ADMIN,
+      businessId: business.id,
+    },
+  });
+  console.log("✅ MAIN_ADMIN oluşturuldu");
 }
 
 main()
   .catch(console.error)
-  .finally(() => prisma.$disconnect());
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

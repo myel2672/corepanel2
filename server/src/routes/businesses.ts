@@ -21,12 +21,15 @@ router.post("/register", async (req, res) => {
         name: adminName,
         email: adminEmail,
         password: hashed,
-        role: "BUSINESS_ADMIN",
+        role: "ADMIN",
         businessId: business.id,
       },
     });
 
-    res.status(201).json({ business, admin: { id: user.id, name: user.name, email: user.email } });
+    res.status(201).json({
+      business,
+      admin: { id: user.id, name: user.name, email: user.email },
+    });
   } catch (error) {
     res.status(500).json({ message: "Business registration failed", error });
   }
@@ -46,10 +49,41 @@ router.get("/", authenticate, requireMainAdmin, async (req: AuthRequest, res) =>
 router.put("/:id/approve", authenticate, requireMainAdmin, async (req, res) => {
   const id = req.params.id as string;
   try {
-    const updated = await prisma.business.update({ where: { id }, data: { isApproved: true } });
+    const updated = await prisma.business.update({
+      where: { id },
+      data: { isApproved: true },
+    });
     res.json(updated);
   } catch (error) {
     res.status(500).json({ message: "Approve failed", error });
+  }
+});
+
+// ✅ Delete a business (main admin) — işletme + bağlı verileri sil
+router.delete("/:id", authenticate, requireMainAdmin, async (req, res) => {
+  const id = req.params.id as string;
+  try {
+    const existing = await prisma.business.findUnique({ where: { id } });
+    if (!existing) return res.status(404).json({ message: "Business not found" });
+
+    // Sıralı silme: bağımlı tablolar önce silinmeli
+    await prisma.$transaction([
+      // StockLog → Product'a bağlı, önce sil
+      prisma.stockLog.deleteMany({ where: { businessId: id } }),
+      // OrderItem → Order'a bağlı
+      prisma.orderItem.deleteMany({
+        where: { order: { businessId: id } },
+      }),
+      prisma.sale.deleteMany({ where: { businessId: id } }),
+      prisma.order.deleteMany({ where: { businessId: id } }),
+      prisma.product.deleteMany({ where: { businessId: id } }),
+      prisma.user.deleteMany({ where: { businessId: id } }),
+      prisma.business.delete({ where: { id } }),
+    ]);
+
+    res.json({ message: "Business and all related data deleted" });
+  } catch (error) {
+    res.status(500).json({ message: "Delete failed", error });
   }
 });
 
@@ -58,7 +92,10 @@ router.get("/me", authenticate, async (req: AuthRequest, res) => {
   const businessId = req.user?.businessId;
   if (!businessId) return res.status(403).json({ message: "Not a business user" });
   try {
-    const b = await prisma.business.findUnique({ where: { id: businessId }, include: { users: true, products: true } });
+    const b = await prisma.business.findUnique({
+      where: { id: businessId },
+      include: { users: true, products: true },
+    });
     res.json(b);
   } catch (error) {
     res.status(500).json({ message: "Failed to fetch business", error });

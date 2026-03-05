@@ -8,70 +8,30 @@ const styles = `
   .op { font-family: 'Nunito', sans-serif; color: rgba(255,255,255,0.85); }
   .op-title { font-size: 26px; font-weight: 800; color: #fff; letter-spacing: -0.5px; margin-bottom: 8px; }
   .op-subtitle { font-size: 14px; color: rgba(255,255,255,0.3); margin-bottom: 28px; }
-  .op-form {
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 16px;
-    padding: 20px 24px;
-    margin-bottom: 24px;
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-    align-items: flex-end;
-  }
+  .op-form { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 20px 24px; margin-bottom: 24px; display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
   .op-field { display: flex; flex-direction: column; gap: 6px; }
   .op-label { font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: rgba(255,255,255,0.3); }
-  .op-input, .op-select {
-    padding: 10px 14px;
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 10px;
-    color: rgba(255,255,255,0.85);
-    font-size: 14px;
-    font-family: 'Nunito', sans-serif;
-    outline: none;
-    transition: all 0.15s;
-  }
+  .op-input, .op-select { padding: 10px 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: rgba(255,255,255,0.85); font-size: 14px; font-family: 'Nunito', sans-serif; outline: none; transition: all 0.15s; }
   .op-input:focus, .op-select:focus { border-color: rgba(99,102,241,0.5); background: rgba(99,102,241,0.08); }
   .op-input::placeholder { color: rgba(255,255,255,0.2); }
   .op-select option { background: #1a1a2e; color: #fff; }
-  .op-btn {
-    padding: 10px 20px;
-    background: linear-gradient(135deg, #6366f1, #7c3aed);
-    border: none;
-    border-radius: 10px;
-    color: #fff;
-    font-size: 14px;
-    font-weight: 700;
-    font-family: 'Nunito', sans-serif;
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-  .op-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(99,102,241,0.3); }
+  .op-btn { padding: 10px 20px; background: linear-gradient(135deg, #6366f1, #7c3aed); border: none; border-radius: 10px; color: #fff; font-size: 14px; font-weight: 700; font-family: 'Nunito', sans-serif; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .op-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(99,102,241,0.3); }
+  .op-btn:disabled { opacity: 0.5; cursor: not-allowed; }
   .op-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 16px; overflow: hidden; }
   .op-th { padding: 12px 16px; text-align: left; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: rgba(255,255,255,0.25); border-bottom: 1px solid rgba(255,255,255,0.06); }
   .op-td { padding: 14px 16px; font-size: 14px; color: rgba(255,255,255,0.7); border-bottom: 1px solid rgba(255,255,255,0.04); }
   .op-tr:hover .op-td { background: rgba(255,255,255,0.02); }
   .op-empty { padding: 40px; text-align: center; color: rgba(255,255,255,0.2); font-size: 14px; }
-  .op-status {
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 700;
-    border: none;
-    cursor: pointer;
-    font-family: 'Nunito', sans-serif;
-  }
+  .op-status { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; border: none; cursor: pointer; font-family: 'Nunito', sans-serif; }
   .op-loading { display: flex; align-items: center; justify-content: center; height: 200px; color: rgba(255,255,255,0.3); font-size: 14px; }
+  .op-error { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2); color: #f87171; padding: 12px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; margin-bottom: 16px; }
+  .op-success { background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.2); color: #34d399; padding: 10px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; margin-bottom: 16px; }
 `;
 
 const STATUS_LABELS: Record<string, string> = {
-  PENDING: 'Bekliyor',
-  PROCESSING: 'İşlemde',
-  SHIPPED: 'Kargolandı',
-  DELIVERED: 'Teslim Edildi',
-  COMPLETED: 'Tamamlandı',
-  CANCELLED: 'İptal',
+  PENDING: 'Bekliyor', PROCESSING: 'İşlemde', SHIPPED: 'Kargolandı',
+  DELIVERED: 'Teslim Edildi', COMPLETED: 'Tamamlandı', CANCELLED: 'İptal',
 };
 
 const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
@@ -87,19 +47,23 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [formError, setFormError] = useState('');
+  const [formSuccess, setFormSuccess] = useState('');
+  const [addLoading, setAddLoading] = useState(false);
   const user = useAuthStore((s) => s.user);
   const [customer, setCustomer] = useState('');
   const [selectedProduct, setSelectedProduct] = useState('');
   const [quantity, setQuantity] = useState('');
 
-  const isAdmin = user?.role === 'MAIN_ADMIN' || user?.role === 'BUSINESS_ADMIN';
+  const isAdmin = user?.role === 'MAIN_ADMIN' || user?.role === 'ADMIN';
 
   const fetchOrders = async () => {
     if (!isAdmin) { setLoading(false); return; }
     try {
+      // ✅ Backend token'dan businessId alıyor — query param gerekmez
       const res = await api.get('/orders');
       setOrders(res.data);
-    } catch { console.error('Siparişler yüklenemedi'); }
+    } catch { setFormError('Siparişler yüklenemedi.'); }
     finally { setLoading(false); }
   };
 
@@ -113,50 +77,61 @@ export default function OrdersPage() {
   useEffect(() => { fetchOrders(); fetchProducts(); }, []);
 
   const handleAddOrder = async () => {
-    if (!customer || !selectedProduct || !quantity) return;
+    if (!customer.trim()) { setFormError('Müşteri adı zorunludur.'); return; }
+    if (!selectedProduct) { setFormError('Lütfen ürün seçin.'); return; }
+    if (!quantity || parseInt(quantity) < 1) { setFormError('Geçerli bir adet girin.'); return; }
+
     const product = products.find(p => p.id === selectedProduct);
-    if (!product) return;
+    if (!product) { setFormError('Seçili ürün bulunamadı.'); return; }
+    if (product.stock < parseInt(quantity)) {
+      setFormError(`Stok yetersiz. Mevcut: ${product.stock} adet.`); return;
+    }
+
+    setAddLoading(true); setFormError(''); setFormSuccess('');
     try {
       await api.post('/orders', {
-        customer,
+        customer: customer.trim(),
         items: [{ productId: product.id, quantity: parseInt(quantity), price: product.price }],
       });
       setCustomer(''); setSelectedProduct(''); setQuantity('');
-      fetchOrders();
-    } catch { console.error('Sipariş eklenemedi'); }
+      setFormSuccess('Sipariş başarıyla oluşturuldu.');
+      fetchOrders(); fetchProducts();
+    } catch (err: any) {
+      setFormError(err?.response?.data?.message || 'Sipariş oluşturulamadı.');
+    } finally {
+      setAddLoading(false);
+    }
   };
 
   const handleStatusChange = async (id: string, status: string) => {
     try {
       await api.put(`/orders/${id}/status`, { status });
       fetchOrders();
-    } catch { console.error('Durum güncellenemedi'); }
+    } catch (err: any) {
+      setFormError(err?.response?.data?.message || 'Durum güncellenemedi.');
+    }
   };
 
-  if (loading) return (
-    <>
-      <style>{styles}</style>
-      <div className="op-loading">Yükleniyor...</div>
-    </>
-  );
+  if (loading) return (<><style>{styles}</style><div className="op-loading">Yükleniyor...</div></>);
 
   return (
     <>
       <style>{styles}</style>
       <div className="op">
         <div className="op-title">Siparişler</div>
-        <div className="op-subtitle">
-          {isAdmin ? `${orders.length} sipariş listeleniyor` : 'Yeni sipariş oluşturun'}
-        </div>
+        <div className="op-subtitle">{isAdmin ? `${orders.length} sipariş listeleniyor` : 'Yeni sipariş oluşturun'}</div>
+
+        {formError && <div className="op-error">{formError}</div>}
+        {formSuccess && <div className="op-success">✓ {formSuccess}</div>}
 
         <div className="op-form">
           <div className="op-field">
             <span className="op-label">Müşteri Adı</span>
-            <input className="op-input" style={{ width: 180 }} placeholder="Müşteri adı" value={customer} onChange={e => setCustomer(e.target.value)} />
+            <input className="op-input" style={{ width: 180 }} placeholder="Müşteri adı" value={customer} onChange={e => { setCustomer(e.target.value); setFormError(''); }} />
           </div>
           <div className="op-field">
             <span className="op-label">Ürün Seç</span>
-            <select className="op-select" style={{ width: 220 }} value={selectedProduct} onChange={e => setSelectedProduct(e.target.value)}>
+            <select className="op-select" style={{ width: 220 }} value={selectedProduct} onChange={e => { setSelectedProduct(e.target.value); setFormError(''); }}>
               <option value="">— Ürün seçin —</option>
               {products.map(p => (
                 <option key={p.id} value={p.id}>{p.name} — {p.price} ₺ (Stok: {p.stock})</option>
@@ -165,9 +140,11 @@ export default function OrdersPage() {
           </div>
           <div className="op-field">
             <span className="op-label">Adet</span>
-            <input className="op-input" style={{ width: 100 }} placeholder="1" type="number" value={quantity} onChange={e => setQuantity(e.target.value)} />
+            <input className="op-input" style={{ width: 100 }} placeholder="1" type="number" min="1" value={quantity} onChange={e => { setQuantity(e.target.value); setFormError(''); }} />
           </div>
-          <button className="op-btn" onClick={handleAddOrder}>+ Sipariş Oluştur</button>
+          <button className="op-btn" onClick={handleAddOrder} disabled={addLoading}>
+            {addLoading ? 'Oluşturuluyor...' : '+ Sipariş Oluştur'}
+          </button>
         </div>
 
         {isAdmin && (
@@ -195,7 +172,7 @@ export default function OrdersPage() {
                         <td className="op-td">
                           {order.items.map(item => (
                             <div key={item.id} style={{ fontSize: 13 }}>
-                              {item.product.name} <span style={{ color: 'rgba(255,255,255,0.3)' }}>×{item.quantity}</span>
+                              {item.product?.name ?? 'Ürün'} <span style={{ color: 'rgba(255,255,255,0.3)' }}>×{item.quantity}</span>
                             </div>
                           ))}
                         </td>
@@ -204,12 +181,7 @@ export default function OrdersPage() {
                           {new Date(order.createdAt).toLocaleDateString('tr-TR')}
                         </td>
                         <td className="op-td">
-                          <select
-                            className="op-status"
-                            value={order.status}
-                            onChange={e => handleStatusChange(order.id, e.target.value)}
-                            style={{ background: sc.bg, color: sc.color }}
-                          >
+                          <select className="op-status" value={order.status} onChange={e => handleStatusChange(order.id, e.target.value)} style={{ background: sc.bg, color: sc.color }}>
                             {Object.entries(STATUS_LABELS).map(([val, label]) => (
                               <option key={val} value={val}>{label}</option>
                             ))}

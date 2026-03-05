@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
+import { useAuthStore } from '../store/authStore';
 
 const SECTORS = ['Kuaför', 'Restoran', 'Kafe', 'Market', 'Eczane', 'Tekstil', 'Otomotiv', 'Teknoloji', 'Diğer'];
 
@@ -30,7 +31,22 @@ const styles = `
     border-radius: 24px;
     padding: 48px 40px;
   }
-  .bs-back { font-size: 13px; color: rgba(255,255,255,0.3); text-decoration: none; margin-bottom: 28px; display: inline-flex; align-items: center; gap: 6px; transition: color 0.15s; }
+  .bs-back {
+    font-size: 13px;
+    color: rgba(255,255,255,0.3);
+    text-decoration: none;
+    margin-bottom: 28px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: color 0.15s;
+    cursor: pointer;
+    background: none;
+    border: none;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 600;
+    padding: 0;
+  }
   .bs-back:hover { color: rgba(255,255,255,0.6); }
   .bs-title { font-size: 24px; font-weight: 800; color: #fff; margin-bottom: 4px; letter-spacing: -0.5px; }
   .bs-subtitle { font-size: 14px; color: rgba(255,255,255,0.3); margin-bottom: 32px; }
@@ -76,23 +92,43 @@ const styles = `
 
 export default function BusinessSignup() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: '', sector: 'Kuaför', adminName: '', adminEmail: '', adminPassword: '' });
+  // Token kontrolü: giriş yapmış kullanıcı → /dashboard, değilse → /login
+  const token = useAuthStore((s) => s.token);
+
+  const handleBack = () => {
+    if (token) {
+      navigate('/dashboard');
+    } else {
+      navigate('/login');
+    }
+  };
+
+  const [form, setForm] = useState({
+    name: '',
+    sector: 'Kuaför',
+    adminName: '',
+    adminEmail: '',
+    adminPassword: '',
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
-  const set = (key: string, val: string) => setForm((f) => ({ ...f, [key]: val }));
+  const setField = (key: string, val: string) =>
+    setForm((f) => ({ ...f, [key]: val }));
 
   const handleSubmit = async () => {
     if (!form.name || !form.adminName || !form.adminEmail || !form.adminPassword) {
-      setError('Tüm alanları doldurunuz.'); return;
+      setError('Tüm alanları doldurunuz.');
+      return;
     }
-    setLoading(true); setError('');
+    setLoading(true);
+    setError('');
     try {
       await api.post('/businesses/register', form);
       setSuccess(true);
     } catch {
-      setError('Kayıt sırasında hata oluştu.');
+      setError('Kayıt sırasında hata oluştu. Lütfen tekrar deneyin.');
     } finally {
       setLoading(false);
     }
@@ -105,7 +141,11 @@ export default function BusinessSignup() {
         <div className="bs-orb bs-orb1" />
         <div className="bs-orb bs-orb2" />
         <div className="bs-card">
-          <a className="bs-back" href="/login">&#8592; Ana sayfaya d&ouml;n</a>
+          {/* ← Düzeltme: <a href> yerine useNavigate + token kontrolü */}
+          <button className="bs-back" onClick={handleBack}>
+            &#8592; {token ? 'Panele dön' : 'Giriş sayfasına dön'}
+          </button>
+
           <div className="bs-title">İşletme Kaydı</div>
           <div className="bs-subtitle">Corepanel'e işletmenizi kaydedin</div>
 
@@ -115,27 +155,63 @@ export default function BusinessSignup() {
             <div className="bs-success">
               ✓ Kayıt başarılı! Yönetici onayından sonra giriş yapabilirsiniz.
               <br /><br />
-              <button className="bs-btn" style={{ marginTop: 0 }} onClick={() => navigate('/login')}>Giriş Sayfasına Git</button>
+              <button
+                className="bs-btn"
+                style={{ marginTop: 0 }}
+                onClick={() => navigate('/login')}
+              >
+                Giriş Sayfasına Git
+              </button>
             </div>
           ) : (
             <>
               <div className="bs-section">İşletme Bilgileri</div>
               <label className="bs-label">İşletme Adı</label>
-              <input className="bs-input" placeholder="İşletme adını girin" value={form.name} onChange={(e) => set('name', e.target.value)} />
+              <input
+                className="bs-input"
+                placeholder="İşletme adını girin"
+                value={form.name}
+                onChange={(e) => setField('name', e.target.value)}
+              />
               <label className="bs-label">Sektör</label>
-              <select className="bs-select" value={form.sector} onChange={(e) => set('sector', e.target.value)}>
+              <select
+                className="bs-select"
+                value={form.sector}
+                onChange={(e) => setField('sector', e.target.value)}
+              >
                 {SECTORS.map((s) => <option key={s}>{s}</option>)}
               </select>
 
               <div className="bs-section">Yönetici Bilgileri</div>
               <label className="bs-label">Ad Soyad</label>
-              <input className="bs-input" placeholder="Yönetici adı" value={form.adminName} onChange={(e) => set('adminName', e.target.value)} />
+              <input
+                className="bs-input"
+                placeholder="Yönetici adı"
+                value={form.adminName}
+                onChange={(e) => setField('adminName', e.target.value)}
+              />
               <label className="bs-label">E-Posta</label>
-              <input className="bs-input" type="email" placeholder="ornek@isletme.com" value={form.adminEmail} onChange={(e) => set('adminEmail', e.target.value)} />
+              <input
+                className="bs-input"
+                type="email"
+                placeholder="ornek@isletme.com"
+                value={form.adminEmail}
+                onChange={(e) => setField('adminEmail', e.target.value)}
+              />
               <label className="bs-label">Şifre</label>
-              <input className="bs-input" type="password" placeholder="••••••••" value={form.adminPassword} onChange={(e) => set('adminPassword', e.target.value)} />
+              <input
+                className="bs-input"
+                type="password"
+                placeholder="••••••••"
+                value={form.adminPassword}
+                onChange={(e) => setField('adminPassword', e.target.value)}
+              />
 
-              <button className="bs-btn" onClick={handleSubmit} disabled={loading}>
+              <button
+                className="bs-btn"
+                onClick={handleSubmit}
+                disabled={loading}
+              >
                 {loading ? 'Kaydediliyor...' : 'Kayıt Ol'}
               </button>
             </>

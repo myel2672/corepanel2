@@ -2,11 +2,11 @@ import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 
 const navItems = [
-  { to: '/dashboard', label: 'Panel', icon: '▦', roles: ['MAIN_ADMIN', 'BUSINESS_ADMIN', 'STAFF'] },
-  { to: '/products', label: 'Ürünler', icon: '◈', roles: ['MAIN_ADMIN', 'BUSINESS_ADMIN', 'STAFF'] },
-  { to: '/orders', label: 'Siparişler', icon: '◎', roles: ['MAIN_ADMIN', 'BUSINESS_ADMIN', 'STAFF'] },
-  { to: '/sales', label: 'Satışlar', icon: '◉', roles: ['MAIN_ADMIN', 'BUSINESS_ADMIN', 'STAFF'] },
-  { to: '/business', label: 'İşletme', icon: '◐', roles: ['BUSINESS_ADMIN', 'STAFF'] },
+  { to: '/dashboard', label: 'Panel', icon: '▦', roles: ['MAIN_ADMIN', 'ADMIN', 'STAFF'] },
+  { to: '/products', label: 'Ürünler', icon: '◈', roles: ['MAIN_ADMIN', 'ADMIN', 'STAFF'] },
+  { to: '/orders', label: 'Siparişler', icon: '◎', roles: ['MAIN_ADMIN', 'ADMIN', 'STAFF'] },
+  { to: '/sales', label: 'Satışlar', icon: '◉', roles: ['MAIN_ADMIN', 'ADMIN', 'STAFF'] },
+  { to: '/business', label: 'İşletme', icon: '◐', roles: ['ADMIN', 'STAFF'] },
   { to: '/main-admin', label: 'İşletmeler', icon: '❖', roles: ['MAIN_ADMIN'] },
 ];
 
@@ -24,9 +24,24 @@ export default function Layout() {
     (item) => !item.roles || item.roles.includes(user?.role ?? '')
   );
 
-  const initials = user?.name
-    ? user.name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
-    : '?';
+  // Düzeltme: name yoksa email'in ilk harfini, o da yoksa '?' göster
+  const displayName = user?.name || user?.email || 'Kullanıcı';
+  const initials = displayName
+    .split(' ')
+    .map((w: string) => w[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+
+  // Rol etiketi
+  const roleLabel: Record<string, string> = {
+    MAIN_ADMIN: 'Ana Yönetici',
+    ADMIN: 'İşletme Yöneticisi',
+    STAFF: 'Personel',
+  };
+
+  // ADMIN ve STAFF için "İşletme Kaydı" linki gösterilmez
+  const showBusinessSignupLink = user?.role === 'MAIN_ADMIN';
 
   return (
     <>
@@ -75,7 +90,7 @@ export default function Layout() {
           letter-spacing: 1.5px;
           text-transform: uppercase;
         }
-        .sidebar-nav { flex: 1; padding: 16px 12px; display: flex; flex-direction: column; gap: 4px; }
+        .sidebar-nav { flex: 1; padding: 16px 12px; display: flex; flex-direction: column; gap: 4px; overflow-y: auto; }
         .sidebar-nav-label {
           font-size: 10px;
           letter-spacing: 1.5px;
@@ -187,22 +202,28 @@ export default function Layout() {
                 {item.label}
               </Link>
             ))}
-            <div className="sidebar-nav-label">Diğer</div>
-            <Link
-              to="/business-signup"
-              className={`nav-link${location.pathname === '/business-signup' ? ' active' : ''}`}
-            >
-              <span className="nav-icon">✦</span>
-              İşletme Kaydı
-            </Link>
+
+            {/* Sadece MAIN_ADMIN yeni işletme kaydedebilir */}
+            {showBusinessSignupLink && (
+              <>
+                <div className="sidebar-nav-label">Diğer</div>
+                <Link
+                  to="/business-signup"
+                  className={`nav-link${location.pathname === '/business-signup' ? ' active' : ''}`}
+                >
+                  <span className="nav-icon">✦</span>
+                  İşletme Kaydı
+                </Link>
+              </>
+            )}
           </nav>
 
           <div className="sidebar-footer">
             <div className="user-card">
               <div className="user-avatar">{initials}</div>
               <div className="user-info">
-                <div className="user-name">{user?.name}</div>
-                <div className="user-role">{user?.role?.replace('_', ' ')}</div>
+                <div className="user-name">{displayName}</div>
+                <div className="user-role">{roleLabel[user?.role ?? ''] ?? user?.role}</div>
               </div>
             </div>
             <button className="logout-btn" onClick={handleLogout}>Çıkış Yap</button>

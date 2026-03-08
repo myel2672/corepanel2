@@ -8,107 +8,78 @@ datasource db {
 }
 
 model User {
-  id         String    @id @default(cuid())
+  id         Int       @id @default(autoincrement())
   email      String    @unique
-  name       String?
   password   String
-  role       Role      @default(ADMIN)
-  businessId String?
-  business   Business? @relation(fields: [businessId], references: [id])
-  orders     Order[]
+  role       String    @default("ADMIN")
+  businessId Int?
   createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  business   Business? @relation(fields: [businessId], references: [id])
 }
 
 model Business {
-  id         String    @id @default(cuid())
+  id         Int        @id @default(autoincrement())
   name       String
-  sector     String?
-  isApproved Boolean   @default(false)
+  sector     String
+  isApproved Boolean    @default(false)
+  createdAt  DateTime   @default(now())
   users      User[]
   products   Product[]
   orders     Order[]
+  customers  Customer[]
   sales      Sale[]
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
 }
 
 model Product {
-  id          String      @id @default(cuid())
+  id          Int      @id @default(autoincrement())
   name        String
   description String?
   price       Float
   costPrice   Float?
-  stock       Int         @default(0)
-  businessId  String
-  business    Business    @relation(fields: [businessId], references: [id])
-  orderItems  OrderItem[]
+  stock       Int      @default(0)
+  businessId  Int
+  createdAt   DateTime @default(now())
+  business    Business @relation(fields: [businessId], references: [id])
+  orders      Order[]
   sales       Sale[]
-  stockLogs   StockLog[]
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+}
+
+model Customer {
+  id         Int      @id @default(autoincrement())
+  name       String
+  email      String?
+  phone      String?
+  businessId Int
+  createdAt  DateTime @default(now())
+  business   Business @relation(fields: [businessId], references: [id])
+  orders     Order[]
 }
 
 model Order {
-  id         String      @id @default(cuid())
-  customer   String?
-  status     OrderStatus @default(COMPLETED)
-  total      Float       @default(0)
-  businessId String
-  business   Business    @relation(fields: [businessId], references: [id])
-  userId     String?
-  createdBy  User?       @relation(fields: [userId], references: [id])
-  items      OrderItem[]
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
-}
-
-model OrderItem {
-  id        String  @id @default(cuid())
-  orderId   String
-  order     Order   @relation(fields: [orderId], references: [id])
-  productId String
-  product   Product @relation(fields: [productId], references: [id])
-  quantity  Int
-  price     Float
+  id         Int       @id @default(autoincrement())
+  productId  Int
+  businessId Int
+  customerId Int?
+  quantity   Int
+  status     String    @default("PENDING")
+  createdAt  DateTime  @default(now())
+  product    Product   @relation(fields: [productId], references: [id])
+  business   Business  @relation(fields: [businessId], references: [id])
+  customer   Customer? @relation(fields: [customerId], references: [id])
 }
 
 model Sale {
-  id          String   @id @default(cuid())
-  businessId  String
-  business    Business @relation(fields: [businessId], references: [id])
-  productId   String?
-  product     Product? @relation(fields: [productId], references: [id])
+  id          Int      @id @default(autoincrement())
+  businessId  Int
+  productId   Int?
   description String?
-  category    String?
   quantity    Int      @default(1)
   unitPrice   Float    @default(0)
   unitCost    Float    @default(0)
   total       Float    @default(0)
+  amount      Float    @default(0)
   date        DateTime @default(now())
   createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-model StockLog {
-  id         String   @id @default(cuid())
-  productId  String
-  product    Product  @relation(fields: [productId], references: [id])
-  businessId String
-  change     Int
-  reason     String?
-  createdAt  DateTime @default(now())
-}
-
-enum Role {
-  MAIN_ADMIN
-  ADMIN
-  STAFF
-}
-
-enum OrderStatus {
-  PENDING
-  PROCESSING
-  COMPLETED
-  CANCELLED
+  business    Business @relation(fields: [businessId], references: [id])
+  product     Product? @relation(fields: [productId], references: [id])
 }

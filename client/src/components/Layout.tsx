@@ -6,8 +6,9 @@ const navItems = [
   { to: '/products', label: 'Ürünler', icon: '◈', roles: ['MAIN_ADMIN', 'ADMIN', 'STAFF'] },
   { to: '/orders', label: 'Siparişler', icon: '◎', roles: ['MAIN_ADMIN', 'ADMIN', 'STAFF'] },
   { to: '/sales', label: 'Satışlar', icon: '◉', roles: ['MAIN_ADMIN', 'ADMIN', 'STAFF'] },
+  { to: '/customers', label: 'Müşteriler', icon: '◑', roles: ['MAIN_ADMIN', 'ADMIN', 'STAFF'] },
   { to: '/business', label: 'İşletme', icon: '◐', roles: ['ADMIN', 'STAFF'] },
-  { to: '/main-admin', label: 'İşletmeler', icon: '❖', roles: ['MAIN_ADMIN'] },
+  { to: '/admin', label: 'İşletmeler', icon: '❖', roles: ['MAIN_ADMIN'] },
 ];
 
 export default function Layout() {
@@ -24,7 +25,6 @@ export default function Layout() {
     (item) => !item.roles || item.roles.includes(user?.role ?? '')
   );
 
-  // Düzeltme: name yoksa email'in ilk harfini, o da yoksa '?' göster
   const displayName = user?.name || user?.email || 'Kullanıcı';
   const initials = displayName
     .split(' ')
@@ -33,14 +33,12 @@ export default function Layout() {
     .slice(0, 2)
     .toUpperCase();
 
-  // Rol etiketi
   const roleLabel: Record<string, string> = {
     MAIN_ADMIN: 'Ana Yönetici',
     ADMIN: 'İşletme Yöneticisi',
     STAFF: 'Personel',
   };
 
-  // ADMIN ve STAFF için "İşletme Kaydı" linki gösterilmez
   const showBusinessSignupLink = user?.role === 'MAIN_ADMIN';
 
   return (
@@ -52,7 +50,6 @@ export default function Layout() {
 
         .layout { display: flex; height: 100vh; background: #0f1117; }
 
-        /* Sidebar */
         .sidebar {
           width: 240px;
           min-width: 240px;
@@ -171,7 +168,6 @@ export default function Layout() {
         }
         .logout-btn:hover { background: rgba(239,68,68,0.2); border-color: rgba(239,68,68,0.4); }
 
-        /* Main */
         .main-content {
           flex: 1;
           overflow-y: auto;
@@ -203,13 +199,12 @@ export default function Layout() {
               </Link>
             ))}
 
-            {/* Sadece MAIN_ADMIN yeni işletme kaydedebilir */}
             {showBusinessSignupLink && (
               <>
                 <div className="sidebar-nav-label">Diğer</div>
                 <Link
-                  to="/business-signup"
-                  className={`nav-link${location.pathname === '/business-signup' ? ' active' : ''}`}
+                  to="/register"
+                  className={`nav-link${location.pathname === '/register' ? ' active' : ''}`}
                 >
                   <span className="nav-icon">✦</span>
                   İşletme Kaydı

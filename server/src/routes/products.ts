@@ -11,7 +11,7 @@ router.use(authenticate);
 router.get("/", async (req: any, res) => {
   try {
     const user = req.user;
-    const where = user.role === "MAIN_ADMIN" ? {} : { businessId: user.businessId };
+    const where = user.role === "MAIN_ADMIN" ? {} : { businessId: Number(user.businessId) };
     const products = await prisma.product.findMany({
       where,
       orderBy: { createdAt: "desc" },
@@ -26,9 +26,13 @@ router.get("/", async (req: any, res) => {
 router.post("/", async (req: any, res) => {
   try {
     const user = req.user;
-    const { name, description, price, costPrice, stock } = req.body;
+    const { name, description, price, costPrice, stock, businessId: bodyBusinessId } = req.body;
 
-    const finalBusinessId = user.businessId;
+    // MAIN_ADMIN body'den businessId alır, diğerleri token'dan
+    const finalBusinessId =
+      user.role === "MAIN_ADMIN"
+        ? Number(bodyBusinessId)
+        : Number(user.businessId);
 
     if (!finalBusinessId) {
       return res.status(400).json({ message: "Business ID gerekli" });
@@ -39,7 +43,7 @@ router.post("/", async (req: any, res) => {
         name,
         description,
         price: Number(price),
-        costPrice: Number(costPrice),
+        costPrice: costPrice ? Number(costPrice) : null,
         stock: Number(stock),
         businessId: finalBusinessId,
       },
@@ -56,13 +60,13 @@ router.post("/", async (req: any, res) => {
 router.put("/:id", async (req: any, res) => {
   try {
     const user = req.user;
-    const productId = req.params.id;
+    const productId = Number(req.params.id);
     const { name, description, price, costPrice, stock } = req.body;
 
     const product = await prisma.product.findUnique({ where: { id: productId } });
     if (!product) return res.status(404).json({ message: "Ürün bulunamadı" });
 
-    if (user.role !== "MAIN_ADMIN" && product.businessId !== user.businessId) {
+    if (user.role !== "MAIN_ADMIN" && product.businessId !== Number(user.businessId)) {
       return res.status(403).json({ message: "Yetkisiz işlem" });
     }
 
@@ -72,13 +76,14 @@ router.put("/:id", async (req: any, res) => {
         name,
         description,
         price: Number(price),
-        costPrice: Number(costPrice),
+        costPrice: costPrice ? Number(costPrice) : null,
         stock: Number(stock),
       },
     });
 
     res.json(updated);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: "Ürün güncellenemedi" });
   }
 });
@@ -87,18 +92,27 @@ router.put("/:id", async (req: any, res) => {
 router.delete("/:id", async (req: any, res) => {
   try {
     const user = req.user;
-    const productId = req.params.id;
+    const productId = Number(req.params.id);
 
     const product = await prisma.product.findUnique({ where: { id: productId } });
     if (!product) return res.status(404).json({ message: "Ürün bulunamadı" });
 
-    if (user.role !== "MAIN_ADMIN" && product.businessId !== user.businessId) {
+    if (user.role !== "MAIN_ADMIN" && product.businessId !== Number(user.businessId)) {
       return res.status(403).json({ message: "Yetkisiz işlem" });
     }
 
+    // Önce bağlı satışları sil, sonra ürünü sil
+    await prisma.sale.deleteMany({ where: { productId } });
     await prisma.product.delete({ where: { id: productId } });
+
     res.json({ message: "Ürün silindi" });
-  } catch (error) {
+  } catch (error: any) {
+    if (error.code === "P2003") {
+      return res.status(400).json({
+        message: "Bu ürün siparişlerde kullanıldığı için silinemez. Önce siparişleri silin.",
+      });
+    }
+    console.error(error);
     res.status(500).json({ message: "Sunucu hatası" });
   }
 });

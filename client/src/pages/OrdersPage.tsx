@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import api from '../api/axios';
-import type { Order, Product } from '../types';
 import { useAuthStore } from '../store/authStore';
 
 const styles = `
@@ -44,27 +43,25 @@ const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
 };
 
 export default function OrdersPage() {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [formError, setFormError] = useState('');
   const [formSuccess, setFormSuccess] = useState('');
   const [addLoading, setAddLoading] = useState(false);
   const user = useAuthStore((s) => s.user);
-  const [customer, setCustomer] = useState('');
   const [selectedProduct, setSelectedProduct] = useState('');
   const [quantity, setQuantity] = useState('');
 
-  const isAdmin = user?.role === 'MAIN_ADMIN' || user?.role === 'ADMIN';
-
   const fetchOrders = async () => {
-    if (!isAdmin) { setLoading(false); return; }
     try {
-      // ✅ Backend token'dan businessId alıyor — query param gerekmez
       const res = await api.get('/orders');
       setOrders(res.data);
-    } catch { setFormError('Siparişler yüklenemedi.'); }
-    finally { setLoading(false); }
+    } catch {
+      setFormError('Siparişler yüklenemedi.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const fetchProducts = async () => {
@@ -77,23 +74,16 @@ export default function OrdersPage() {
   useEffect(() => { fetchOrders(); fetchProducts(); }, []);
 
   const handleAddOrder = async () => {
-    if (!customer.trim()) { setFormError('Müşteri adı zorunludur.'); return; }
     if (!selectedProduct) { setFormError('Lütfen ürün seçin.'); return; }
     if (!quantity || parseInt(quantity) < 1) { setFormError('Geçerli bir adet girin.'); return; }
-
-    const product = products.find(p => p.id === selectedProduct);
-    if (!product) { setFormError('Seçili ürün bulunamadı.'); return; }
-    if (product.stock < parseInt(quantity)) {
-      setFormError(`Stok yetersiz. Mevcut: ${product.stock} adet.`); return;
+    const product = products.find(p => String(p.id) === selectedProduct);
+    if (product && product.stock < parseInt(quantity)) {
+      setFormError(`Stok yetersiz. Mevcut: ${product.stock}`); return;
     }
-
     setAddLoading(true); setFormError(''); setFormSuccess('');
     try {
-      await api.post('/orders', {
-        customer: customer.trim(),
-        items: [{ productId: product.id, quantity: parseInt(quantity), price: product.price }],
-      });
-      setCustomer(''); setSelectedProduct(''); setQuantity('');
+      await api.post('/orders', { productId: Number(selectedProduct), quantity: parseInt(quantity) });
+      setSelectedProduct(''); setQuantity('');
       setFormSuccess('Sipariş başarıyla oluşturuldu.');
       fetchOrders(); fetchProducts();
     } catch (err: any) {
@@ -103,12 +93,12 @@ export default function OrdersPage() {
     }
   };
 
-  const handleStatusChange = async (id: string, status: string) => {
+  const handleStatusChange = async (id: number, status: string) => {
     try {
       await api.put(`/orders/${id}/status`, { status });
       fetchOrders();
-    } catch (err: any) {
-      setFormError(err?.response?.data?.message || 'Durum güncellenemedi.');
+    } catch {
+      setFormError('Durum güncellenemedi.');
     }
   };
 
@@ -119,22 +109,18 @@ export default function OrdersPage() {
       <style>{styles}</style>
       <div className="op">
         <div className="op-title">Siparişler</div>
-        <div className="op-subtitle">{isAdmin ? `${orders.length} sipariş listeleniyor` : 'Yeni sipariş oluşturun'}</div>
+        <div className="op-subtitle">{orders.length} sipariş listeleniyor</div>
 
         {formError && <div className="op-error">{formError}</div>}
         {formSuccess && <div className="op-success">✓ {formSuccess}</div>}
 
         <div className="op-form">
           <div className="op-field">
-            <span className="op-label">Müşteri Adı</span>
-            <input className="op-input" style={{ width: 180 }} placeholder="Müşteri adı" value={customer} onChange={e => { setCustomer(e.target.value); setFormError(''); }} />
-          </div>
-          <div className="op-field">
             <span className="op-label">Ürün Seç</span>
-            <select className="op-select" style={{ width: 220 }} value={selectedProduct} onChange={e => { setSelectedProduct(e.target.value); setFormError(''); }}>
+            <select className="op-select" style={{ width: 260 }} value={selectedProduct} onChange={e => { setSelectedProduct(e.target.value); setFormError(''); }}>
               <option value="">— Ürün seçin —</option>
               {products.map(p => (
-                <option key={p.id} value={p.id}>{p.name} — {p.price} ₺ (Stok: {p.stock})</option>
+                <option key={p.id} value={String(p.id)}>{p.name} — {p.price} ₺ (Stok: {p.stock})</option>
               ))}
             </select>
           </div>
@@ -147,54 +133,50 @@ export default function OrdersPage() {
           </button>
         </div>
 
-        {isAdmin && (
-          <div className="op-card">
-            {orders.length === 0 ? (
-              <div className="op-empty">Henüz sipariş bulunmuyor</div>
-            ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr>
-                    <th className="op-th">Müşteri</th>
-                    <th className="op-th">Ürünler</th>
-                    <th className="op-th">Toplam</th>
-                    <th className="op-th">Tarih</th>
-                    <th className="op-th">Durum</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {orders.map(order => {
-                    const total = order.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-                    const sc = STATUS_COLORS[order.status] || { bg: 'rgba(255,255,255,0.1)', color: '#fff' };
-                    return (
-                      <tr key={order.id} className="op-tr">
-                        <td className="op-td" style={{ color: '#fff', fontWeight: 600 }}>{order.customer}</td>
-                        <td className="op-td">
-                          {order.items.map(item => (
-                            <div key={item.id} style={{ fontSize: 13 }}>
-                              {item.product?.name ?? 'Ürün'} <span style={{ color: 'rgba(255,255,255,0.3)' }}>×{item.quantity}</span>
-                            </div>
+        <div className="op-card">
+          {orders.length === 0 ? (
+            <div className="op-empty">Henüz sipariş bulunmuyor</div>
+          ) : (
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>
+                  <th className="op-th">#</th>
+                  <th className="op-th">Ürün</th>
+                  <th className="op-th">Müşteri</th>
+                  <th className="op-th">Adet</th>
+                  <th className="op-th">Toplam</th>
+                  <th className="op-th">Tarih</th>
+                  <th className="op-th">Durum</th>
+                </tr>
+              </thead>
+              <tbody>
+                {orders.map(order => {
+                  const total = order.product ? order.quantity * order.product.price : 0;
+                  const sc = STATUS_COLORS[order.status] || { bg: 'rgba(255,255,255,0.1)', color: '#fff' };
+                  return (
+                    <tr key={order.id} className="op-tr">
+                      <td className="op-td" style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12 }}>#{order.id}</td>
+                      <td className="op-td" style={{ color: '#fff', fontWeight: 600 }}>{order.product?.name ?? '—'}</td>
+                      <td className="op-td">{order.customer?.name ?? <span style={{ color: 'rgba(255,255,255,0.2)' }}>—</span>}</td>
+                      <td className="op-td">{order.quantity}</td>
+                      <td className="op-td" style={{ color: '#a78bfa', fontWeight: 700 }}>{total.toFixed(2)} ₺</td>
+                      <td className="op-td" style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>
+                        {new Date(order.createdAt).toLocaleDateString('tr-TR')}
+                      </td>
+                      <td className="op-td">
+                        <select className="op-status" value={order.status} onChange={e => handleStatusChange(order.id, e.target.value)} style={{ background: sc.bg, color: sc.color }}>
+                          {Object.entries(STATUS_LABELS).map(([val, label]) => (
+                            <option key={val} value={val}>{label}</option>
                           ))}
-                        </td>
-                        <td className="op-td" style={{ color: '#a78bfa', fontWeight: 700 }}>{total.toFixed(2)} ₺</td>
-                        <td className="op-td" style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>
-                          {new Date(order.createdAt).toLocaleDateString('tr-TR')}
-                        </td>
-                        <td className="op-td">
-                          <select className="op-status" value={order.status} onChange={e => handleStatusChange(order.id, e.target.value)} style={{ background: sc.bg, color: sc.color }}>
-                            {Object.entries(STATUS_LABELS).map(([val, label]) => (
-                              <option key={val} value={val}>{label}</option>
-                            ))}
-                          </select>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            )}
-          </div>
-        )}
+                        </select>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
       </div>
     </>
   );

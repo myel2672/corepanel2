@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import api from '../api/axios';
-import type { Product } from '../types';
 import { useAuthStore } from '../store/authStore';
 
 const styles = `
@@ -11,21 +10,18 @@ const styles = `
   .pp-add-form { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 20px 24px; margin-bottom: 24px; display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
   .pp-field { display: flex; flex-direction: column; gap: 6px; }
   .pp-label { font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: rgba(255,255,255,0.3); }
-  .pp-input { padding: 10px 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: rgba(255,255,255,0.85); font-size: 14px; font-family: 'Nunito', sans-serif; outline: none; transition: all 0.15s; width: 140px; }
-  .pp-input:focus { border-color: rgba(99,102,241,0.5); background: rgba(99,102,241,0.08); }
+  .pp-input, .pp-select { padding: 10px 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: rgba(255,255,255,0.85); font-size: 14px; font-family: 'Nunito', sans-serif; outline: none; transition: all 0.15s; width: 140px; }
+  .pp-input:focus, .pp-select:focus { border-color: rgba(99,102,241,0.5); background: rgba(99,102,241,0.08); }
   .pp-input::placeholder { color: rgba(255,255,255,0.2); }
+  .pp-select option { background: #1a1a2e; color: #fff; }
   .pp-btn { padding: 10px 20px; background: linear-gradient(135deg, #6366f1, #7c3aed); border: none; border-radius: 10px; color: #fff; font-size: 14px; font-weight: 700; font-family: 'Nunito', sans-serif; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
   .pp-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(99,102,241,0.3); }
   .pp-btn:disabled { opacity: 0.5; cursor: not-allowed; }
   .pp-btn-sm { padding: 6px 14px; border: none; border-radius: 8px; font-size: 12px; font-weight: 700; font-family: 'Nunito', sans-serif; cursor: pointer; transition: all 0.15s; }
   .pp-btn-edit { background: rgba(99,102,241,0.15); color: #a78bfa; border: 1px solid rgba(99,102,241,0.2); }
-  .pp-btn-edit:hover { background: rgba(99,102,241,0.25); }
   .pp-btn-save { background: rgba(52,211,153,0.15); color: #34d399; border: 1px solid rgba(52,211,153,0.2); }
-  .pp-btn-save:hover { background: rgba(52,211,153,0.25); }
   .pp-btn-cancel { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.4); border: 1px solid rgba(255,255,255,0.1); }
-  .pp-btn-cancel:hover { background: rgba(255,255,255,0.1); }
   .pp-btn-delete { background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.2); }
-  .pp-btn-delete:hover { background: rgba(239,68,68,0.2); }
   .pp-table { width: 100%; border-collapse: collapse; }
   .pp-th { padding: 12px 16px; text-align: left; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: rgba(255,255,255,0.25); border-bottom: 1px solid rgba(255,255,255,0.06); }
   .pp-td { padding: 14px 16px; font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.7); border-bottom: 1px solid rgba(255,255,255,0.04); }
@@ -42,7 +38,8 @@ const styles = `
 `;
 
 export default function ProductsPage() {
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
+  const [businesses, setBusinesses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [formError, setFormError] = useState('');
   const [formSuccess, setFormSuccess] = useState('');
@@ -50,19 +47,19 @@ export default function ProductsPage() {
   const [price, setPrice] = useState('');
   const [costPrice, setCostPrice] = useState('');
   const [stock, setStock] = useState('');
-  const user = useAuthStore((s) => s.user);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [selectedBusinessId, setSelectedBusinessId] = useState('');
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [editName, setEditName] = useState('');
   const [editPrice, setEditPrice] = useState('');
   const [editCostPrice, setEditCostPrice] = useState('');
   const [editStock, setEditStock] = useState('');
   const [addLoading, setAddLoading] = useState(false);
-
+  const user = useAuthStore((s) => s.user);
+  const isMainAdmin = user?.role === 'MAIN_ADMIN';
   const canEdit = user?.role === 'ADMIN' || user?.role === 'MAIN_ADMIN';
 
   const fetchProducts = async () => {
     try {
-      // ✅ Backend token'dan businessId alıyor — query param gerekmez
       const res = await api.get('/products');
       setProducts(res.data);
     } catch {
@@ -72,22 +69,37 @@ export default function ProductsPage() {
     }
   };
 
-  useEffect(() => { fetchProducts(); }, []);
+  const fetchBusinesses = async () => {
+    try {
+      const res = await api.get('/businesses');
+      setBusinesses(res.data);
+    } catch { console.error('İşletmeler yüklenemedi'); }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+    if (isMainAdmin) fetchBusinesses();
+  }, []);
 
   const handleAdd = async () => {
     if (!name.trim()) { setFormError('Ürün adı zorunludur.'); return; }
     if (!price || isNaN(parseFloat(price))) { setFormError('Geçerli bir fiyat girin.'); return; }
-    if (!stock || isNaN(parseInt(stock))) { setFormError('Geçerli bir stok miktarı girin.'); return; }
+    if (!stock || isNaN(parseInt(stock))) { setFormError('Geçerli bir stok girin.'); return; }
+    if (isMainAdmin && !selectedBusinessId) { setFormError('Lütfen bir işletme seçin.'); return; }
+
     setAddLoading(true); setFormError(''); setFormSuccess('');
     try {
-      await api.post('/products', {
+      const payload: any = {
         name: name.trim(),
         price: parseFloat(price),
         costPrice: costPrice ? parseFloat(costPrice) : 0,
         stock: parseInt(stock),
-      });
-      setName(''); setPrice(''); setCostPrice(''); setStock('');
-      setFormSuccess('Ürün başarıyla eklendi.');
+      };
+      if (isMainAdmin) payload.businessId = Number(selectedBusinessId);
+
+      await api.post('/products', payload);
+      setName(''); setPrice(''); setCostPrice(''); setStock(''); setSelectedBusinessId('');
+      setFormSuccess('Ürün eklendi.');
       fetchProducts();
     } catch (err: any) {
       setFormError(err?.response?.data?.message || 'Ürün eklenemedi.');
@@ -96,29 +108,41 @@ export default function ProductsPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: number) => {
     if (!confirm('Bu ürünü silmek istediğinize emin misiniz?')) return;
+    setFormError(''); setFormSuccess('');
     try {
       await api.delete(`/products/${id}`);
       setFormSuccess('Ürün silindi.');
       fetchProducts();
-    } catch { setFormError('Ürün silinemedi.'); }
+    } catch (err: any) {
+      setFormError(err?.response?.data?.message || 'Ürün silinemedi.');
+    }
   };
 
-  const startEdit = (p: Product) => {
-    setEditingId(p.id); setEditName(p.name);
-    setEditPrice(String(p.price)); setEditCostPrice(String(p.costPrice ?? ''));
+  const startEdit = (p: any) => {
+    setEditingId(p.id);
+    setEditName(p.name);
+    setEditPrice(String(p.price));
+    setEditCostPrice(String(p.costPrice ?? ''));
     setEditStock(String(p.stock));
   };
 
-  const saveEdit = async (id: string) => {
+  const saveEdit = async (id: number) => {
+    setFormError(''); setFormSuccess('');
     try {
       await api.put(`/products/${id}`, {
-        name: editName, price: parseFloat(editPrice),
-        costPrice: parseFloat(editCostPrice || '0'), stock: parseInt(editStock),
+        name: editName,
+        price: parseFloat(editPrice),
+        costPrice: parseFloat(editCostPrice || '0'),
+        stock: parseInt(editStock),
       });
-      setEditingId(null); setFormSuccess('Ürün güncellendi.'); fetchProducts();
-    } catch { setFormError('Ürün güncellenemedi.'); }
+      setEditingId(null);
+      setFormSuccess('Ürün güncellendi.');
+      fetchProducts();
+    } catch (err: any) {
+      setFormError(err?.response?.data?.message || 'Ürün güncellenemedi.');
+    }
   };
 
   if (loading) return (<><style>{styles}</style><div className="pp-loading">Yükleniyor...</div></>);
@@ -137,13 +161,30 @@ export default function ProductsPage() {
 
         {canEdit && (
           <div className="pp-add-form">
+            {/* MAIN_ADMIN için işletme seçici */}
+            {isMainAdmin && (
+              <div className="pp-field">
+                <span className="pp-label">İşletme</span>
+                <select
+                  className="pp-select"
+                  style={{ width: 180 }}
+                  value={selectedBusinessId}
+                  onChange={e => { setSelectedBusinessId(e.target.value); setFormError(''); }}
+                >
+                  <option value="">— Seçin —</option>
+                  {businesses.map(b => (
+                    <option key={b.id} value={b.id}>{b.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div className="pp-field">
               <span className="pp-label">Ürün Adı</span>
               <input className="pp-input" style={{ width: 180 }} placeholder="Ürün adı" value={name} onChange={e => { setName(e.target.value); setFormError(''); }} />
             </div>
             <div className="pp-field">
               <span className="pp-label">Fiyat (₺)</span>
-              <input className="pp-input" placeholder="0.00" value={price} onChange={e => { setPrice(e.target.value); setFormError(''); }} type="number" min="0" />
+              <input className="pp-input" placeholder="0.00" value={price} onChange={e => setPrice(e.target.value)} type="number" min="0" />
             </div>
             <div className="pp-field">
               <span className="pp-label">Maliyet (₺)</span>
@@ -151,7 +192,7 @@ export default function ProductsPage() {
             </div>
             <div className="pp-field">
               <span className="pp-label">Stok</span>
-              <input className="pp-input" style={{ width: 100 }} placeholder="0" value={stock} onChange={e => { setStock(e.target.value); setFormError(''); }} type="number" min="0" />
+              <input className="pp-input" style={{ width: 100 }} placeholder="0" value={stock} onChange={e => setStock(e.target.value)} type="number" min="0" />
             </div>
             <button className="pp-btn" onClick={handleAdd} disabled={addLoading}>
               {addLoading ? 'Ekleniyor...' : '+ Ürün Ekle'}
@@ -167,6 +208,7 @@ export default function ProductsPage() {
               <thead>
                 <tr>
                   <th className="pp-th">Ürün Adı</th>
+                  {isMainAdmin && <th className="pp-th">İşletme</th>}
                   <th className="pp-th">Fiyat</th>
                   <th className="pp-th">Maliyet</th>
                   <th className="pp-th">Kâr Marjı</th>
@@ -180,19 +222,32 @@ export default function ProductsPage() {
                   return (
                     <tr key={p.id} className="pp-tr">
                       <td className="pp-td" style={{ color: '#fff', fontWeight: 600 }}>
-                        {editingId === p.id ? <input className="pp-edit-input" value={editName} onChange={e => setEditName(e.target.value)} /> : p.name}
+                        {editingId === p.id
+                          ? <input className="pp-edit-input" value={editName} onChange={e => setEditName(e.target.value)} />
+                          : p.name}
+                      </td>
+                      {isMainAdmin && (
+                        <td className="pp-td" style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
+                          {businesses.find(b => b.id === p.businessId)?.name ?? `#${p.businessId}`}
+                        </td>
+                      )}
+                      <td className="pp-td">
+                        {editingId === p.id
+                          ? <input className="pp-edit-input" value={editPrice} onChange={e => setEditPrice(e.target.value)} type="number" />
+                          : <span style={{ color: '#a78bfa', fontWeight: 700 }}>{p.price} ₺</span>}
                       </td>
                       <td className="pp-td">
-                        {editingId === p.id ? <input className="pp-edit-input" value={editPrice} onChange={e => setEditPrice(e.target.value)} type="number" /> : <span style={{ color: '#a78bfa', fontWeight: 700 }}>{p.price} ₺</span>}
-                      </td>
-                      <td className="pp-td">
-                        {editingId === p.id ? <input className="pp-edit-input" value={editCostPrice} onChange={e => setEditCostPrice(e.target.value)} type="number" /> : p.costPrice ? `${p.costPrice} ₺` : <span style={{ color: 'rgba(255,255,255,0.2)' }}>—</span>}
+                        {editingId === p.id
+                          ? <input className="pp-edit-input" value={editCostPrice} onChange={e => setEditCostPrice(e.target.value)} type="number" />
+                          : p.costPrice ? `${p.costPrice} ₺` : <span style={{ color: 'rgba(255,255,255,0.2)' }}>—</span>}
                       </td>
                       <td className="pp-td">
                         {margin ? <span style={{ color: '#34d399', fontWeight: 700 }}>%{margin}</span> : <span style={{ color: 'rgba(255,255,255,0.2)' }}>—</span>}
                       </td>
                       <td className="pp-td">
-                        {editingId === p.id ? <input className="pp-edit-input" style={{ width: 80 }} value={editStock} onChange={e => setEditStock(e.target.value)} type="number" /> : <span className={p.stock < 5 ? 'pp-stock-low' : 'pp-stock-ok'}>{p.stock}</span>}
+                        {editingId === p.id
+                          ? <input className="pp-edit-input" style={{ width: 80 }} value={editStock} onChange={e => setEditStock(e.target.value)} type="number" />
+                          : <span className={p.stock < 5 ? 'pp-stock-low' : 'pp-stock-ok'}>{p.stock}</span>}
                       </td>
                       {canEdit && (
                         <td className="pp-td">

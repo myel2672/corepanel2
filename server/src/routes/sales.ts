@@ -1,101 +1,79 @@
 import { Router } from "express";
 import { PrismaClient } from "@prisma/client";
-import jwt from "jsonwebtoken";
+import { authenticate } from "../middleware/auth";
 
 const router = Router();
 const prisma = new PrismaClient();
+router.use(authenticate);
 
-// Basit authenticate middleware
-const authenticate = async (req: any, res: any, next: any) => {
-  try {
-    const authHeader = req.headers["authorization"];
-    if (!authHeader) {
-      return res.status(401).json({ error: "No token provided" });
-    }
-
-    const token = authHeader.split(" ")[1];
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET as string);
-
-    // Kullanıcıyı DB’den bul
-    const dbUser = await prisma.user.findUnique({
-      where: { id: decoded.id },
-    });
-
-    if (!dbUser) {
-      return res.status(401).json({ error: "User not found" });
-    }
-
-    // req.user içine businessId dahil et
-    req.user = {
-      id: dbUser.id,
-      email: dbUser.email,
-      role: dbUser.role,
-      businessId: dbUser.businessId,
-    };
-
-    next();
-  } catch (error) {
-    console.error("Auth error:", error);
-    return res.status(401).json({ error: "Invalid token" });
-  }
-};
-
-router.get("/stats", authenticate, async (req: any, res) => {
+// GET /sales/me
+router.get("/me", async (req: any, res) => {
   try {
     const user = req.user;
-    const businessId = user.businessId;
+    const where = user.role === "MAIN_ADMIN" ? {} : { businessId: Number(user.businessId) };
+    const sales = await prisma.sale.findMany({
+      where,
+      include: { product: true },
+      orderBy: { createdAt: "desc" },
+    });
+    res.json(sales);
+  } catch {
+    res.status(500).json({ message: "Satışlar yüklenemedi" });
+  }
+});
 
+// POST /sales
+router.post("/", async (req: any, res) => {
+  try {
+    const user = req.user;
+    const { productId, quantity, unitPrice, unitCost, description } = req.body;
+
+    if (!quantity || !unitPrice) {
+      return res.status(400).json({ message: "Adet ve fiyat zorunludur" });
+    }
+
+    const businessId = Number(user.businessId);
     if (!businessId) {
-      return res.json({
-        todaySales: 0,
-        monthSales: 0,
-        ordersCount: 0,
-        productsCount: 0,
+      return res.status(400).json({ message: "Business ID bulunamadı" });
+    }
+
+    const qty = Number(quantity);
+    const price = Number(unitPrice);
+    const cost = Number(unitCost) || 0;
+    const total = qty * price;
+
+    // Stok kontrolü ve düşme
+    if (productId) {
+      const product = await prisma.product.findUnique({ where: { id: Number(productId) } });
+      if (!product) return res.status(404).json({ message: "Ürün bulunamadı" });
+      if (product.stock < qty) {
+        return res.status(400).json({ message: `Stok yetersiz. Mevcut: ${product.stock}` });
+      }
+      await prisma.product.update({
+        where: { id: Number(productId) },
+        data: { stock: { decrement: qty } },
       });
     }
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-
-    const todaySales = await prisma.sale.aggregate({
-      _sum: { total: true },
-      where: {
-        businessId: businessId,
-        createdAt: {
-          gte: today,
-        },
+    const sale = await prisma.sale.create({
+      data: {
+        businessId,
+        productId: productId ? Number(productId) : null,
+        description: description || null,
+        quantity: qty,
+        unitPrice: price,
+        unitCost: cost,
+        total,
+        amount: total,
+        date: new Date(),
       },
+      include: { product: true },
     });
 
-    const monthSales = await prisma.sale.aggregate({
-      _sum: { total: true },
-      where: {
-        businessId: businessId,
-        createdAt: {
-          gte: startOfMonth,
-        },
-      },
-    });
-
-    const ordersCount = await prisma.order.count({
-      where: { businessId: businessId },
-    });
-
-    const productsCount = await prisma.product.count({
-      where: { businessId: businessId },
-    });
-
-    res.json({
-      todaySales: todaySales._sum.total || 0,
-      monthSales: monthSales._sum.total || 0,
-      ordersCount,
-      productsCount,
-    });
-  } catch (error) {
-    console.error("Dashboard Error:", error);
-    res.status(500).json({ error: "Dashboard stats error" });
+    res.status(201).json(sale);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Satış kaydedilemedi" });
   }
 });
 

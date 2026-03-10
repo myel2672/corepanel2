@@ -4,18 +4,18 @@ import type { User } from '../types';
 interface AuthState {
   user: User | null;
   token: string | null;
-  setAuth: (user: User, token: string) => void;
+  refreshToken: string | null;
+  setAuth: (user: User, token: string, refreshToken: string) => void;
+  setToken: (token: string) => void;
   logout: () => void;
 }
 
-// Token'ı localStorage'dan al, user bilgisini JWT'den çöz
 function getUserFromToken(token: string | null): User | null {
   if (!token) return null;
   try {
     const payload = JSON.parse(atob(token.split('.')[1]));
     return {
       id: payload.id || payload.sub,
-      // Backend'e göre name field'ı farklı gelebilir: name, fullName, username
       name: payload.name || payload.fullName || payload.username || payload.email || '',
       email: payload.email,
       role: payload.role,
@@ -27,16 +27,27 @@ function getUserFromToken(token: string | null): User | null {
 }
 
 const storedToken = localStorage.getItem('token');
+const storedRefreshToken = localStorage.getItem('refreshToken');
 
 export const useAuthStore = create<AuthState>((set) => ({
   token: storedToken,
+  refreshToken: storedRefreshToken,
   user: getUserFromToken(storedToken),
-  setAuth: (user, token) => {
+
+  setAuth: (user, token, refreshToken) => {
     localStorage.setItem('token', token);
-    set({ user, token });
+    localStorage.setItem('refreshToken', refreshToken);
+    set({ user, token, refreshToken });
   },
+
+  setToken: (token) => {
+    localStorage.setItem('token', token);
+    set({ token, user: getUserFromToken(token) });
+  },
+
   logout: () => {
     localStorage.removeItem('token');
-    set({ user: null, token: null });
+    localStorage.removeItem('refreshToken');
+    set({ user: null, token: null, refreshToken: null });
   },
 }));

@@ -8,13 +8,18 @@ datasource db {
 }
 
 model User {
-  id         Int       @id @default(autoincrement())
-  email      String    @unique
-  password   String
-  role       String    @default("ADMIN")
-  businessId Int?
-  createdAt  DateTime  @default(now())
-  business   Business? @relation(fields: [businessId], references: [id])
+  id                   Int       @id @default(autoincrement())
+  email                String    @unique
+  password             String
+  role                 String    @default("ADMIN")
+  businessId           Int?
+  isEmailVerified      Boolean   @default(false)
+  emailVerifyToken     String?
+  resetPasswordToken   String?
+  resetPasswordExpiry  DateTime?
+  createdAt            DateTime  @default(now())
+  business             Business? @relation(fields: [businessId], references: [id])
+  refreshTokens        RefreshToken[]
 }
 
 model Business {
@@ -82,4 +87,12 @@ model Sale {
   createdAt   DateTime @default(now())
   business    Business @relation(fields: [businessId], references: [id])
   product     Product? @relation(fields: [productId], references: [id])
+}
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  userId    Int
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

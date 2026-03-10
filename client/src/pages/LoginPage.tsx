@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuthStore } from '../store/authStore';
 
@@ -16,7 +16,7 @@ export default function LoginPage() {
     setLoading(true); setError('');
     try {
       const res = await api.post('/auth/login', { email, password });
-      setAuth(res.data.user, res.data.token);
+      setAuth(res.data.user, res.data.token, res.data.refreshToken);
       navigate('/dashboard');
     } catch {
       setError('E-posta veya şifre hatalı.');
@@ -49,7 +49,6 @@ export default function LoginPage() {
         }
         .orb1 { width: 500px; height: 500px; background: #6366f1; top: -150px; left: -150px; }
         .orb2 { width: 400px; height: 400px; background: #a78bfa; bottom: -100px; right: -100px; }
-
         .login-card {
           position: relative;
           width: 420px;
@@ -173,6 +172,12 @@ export default function LoginPage() {
           <button className="login-btn" onClick={handleLogin} disabled={loading}>
             {loading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
           </button>
+
+          <div style={{textAlign:'center', marginTop: 16}}>
+            <Link to="/forgot-password" style={{fontSize: 13, color: 'rgba(255,255,255,0.3)', textDecoration: 'none'}}>
+              Şifremi unuttum
+            </Link>
+          </div>
 
           <div className="login-hint">Corepanel v1.0 · Tüm hakları saklıdır</div>
         </div>

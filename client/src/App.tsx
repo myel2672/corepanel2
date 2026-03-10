@@ -6,6 +6,7 @@ import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
 import OrdersPage from './pages/OrdersPage';
 import ProductsPage from './pages/ProductsPage';
+import AcceptInvite from './pages/AcceptInvite';
 import SalesPage from './pages/SalesPage';
 import MainAdminDashboard from './pages/MainAdminDashboard';
 import BusinessPanel from './pages/BusinessPanel';
@@ -25,6 +26,7 @@ function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<BusinessSignup />} />
+        <Route path="/accept-invite" element={<AcceptInvite />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/verify-email" element={<VerifyEmail />} />

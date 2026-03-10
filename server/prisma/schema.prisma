@@ -33,6 +33,7 @@ model Business {
   orders     Order[]
   customers  Customer[]
   sales      Sale[]
+  invites    Invite[]
 }
 
 model Product {
@@ -95,4 +96,15 @@ model RefreshToken {
   expiresAt DateTime
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+model Invite {
+  id         Int      @id @default(autoincrement())
+  email      String
+  token      String   @unique
+  businessId Int
+  role       String   @default("STAFF")
+  expiresAt  DateTime
+  used       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 }

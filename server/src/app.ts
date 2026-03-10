@@ -10,6 +10,7 @@ import businessRoutes from "./routes/business";
 import orderRoutes from "./routes/orders";
 import customerRoutes from "./routes/customer";
 import dashboardRoutes from "./routes/dashboard";
+import inviteRoutes from "./routes/invite";
 
 const app = express();
 
@@ -48,6 +49,7 @@ app.use("/businesses", businessRoutes);
 app.use("/orders", orderRoutes);
 app.use("/customers", customerRoutes);
 app.use("/dashboard", dashboardRoutes);
+app.use("/invites", inviteRoutes);
 
 app.listen(5000, () => {
   console.log("SERVER RUNNING ON 5000");

@@ -4,6 +4,7 @@ import { authenticate } from "../middleware/auth";
 
 const router = Router();
 const prisma = new PrismaClient();
+
 // POST /businesses/register — işletme + admin kullanıcı oluştur (public)
 router.post("/register", async (req: any, res) => {
   try {
@@ -12,7 +13,6 @@ router.post("/register", async (req: any, res) => {
       return res.status(400).json({ message: "Tüm alanlar zorunludur" });
     }
 
-    // Email kullanımda mı?
     const existing = await prisma.user.findUnique({ where: { email: adminEmail } });
     if (existing) return res.status(400).json({ message: "Bu e-posta zaten kullanımda" });
 
@@ -38,18 +38,14 @@ router.post("/register", async (req: any, res) => {
     res.status(500).json({ message: "Kayıt başarısız" });
   }
 });
+
 router.use(authenticate);
 
 // GET /businesses — tüm işletmeler (MAIN_ADMIN)
 router.get("/", async (req: any, res) => {
   try {
     const businesses = await prisma.business.findMany({
-      include: {
-        users: true,
-        products: true,
-        orders: true,
-        sales: true,
-      },
+      include: { users: true, products: true, orders: true, sales: true },
       orderBy: { createdAt: "desc" },
     });
     res.json(businesses);
@@ -63,15 +59,27 @@ router.get("/", async (req: any, res) => {
 router.get("/me", async (req: any, res) => {
   try {
     const user = req.user;
-    if (!user.businessId) {
-      return res.status(404).json({ message: "İşletme bulunamadı" });
-    }
-    const business = await prisma.business.findUnique({
-      where: { id: Number(user.businessId) },
-    });
+    if (!user.businessId) return res.status(404).json({ message: "İşletme bulunamadı" });
+    const business = await prisma.business.findUnique({ where: { id: Number(user.businessId) } });
     if (!business) return res.status(404).json({ message: "İşletme bulunamadı" });
     res.json(business);
-  } catch (err) {
+  } catch {
+    res.status(500).json({ message: "Sunucu hatası" });
+  }
+});
+
+// GET /businesses/me/users — işletmedeki tüm kullanıcılar (ADMIN)
+router.get("/me/users", async (req: any, res) => {
+  try {
+    const user = req.user;
+    if (!user.businessId) return res.status(404).json({ message: "İşletme bulunamadı" });
+    const users = await prisma.user.findMany({
+      where: { businessId: Number(user.businessId) },
+      select: { id: true, email: true, role: true, createdAt: true },
+      orderBy: { createdAt: "asc" },
+    });
+    res.json(users);
+  } catch {
     res.status(500).json({ message: "Sunucu hatası" });
   }
 });
@@ -80,12 +88,8 @@ router.get("/me", async (req: any, res) => {
 router.post("/", async (req: any, res) => {
   try {
     const { name, sector } = req.body;
-    if (!name || !sector) {
-      return res.status(400).json({ message: "Ad ve sektör zorunludur" });
-    }
-    const business = await prisma.business.create({
-      data: { name, sector, isApproved: false },
-    });
+    if (!name || !sector) return res.status(400).json({ message: "Ad ve sektör zorunludur" });
+    const business = await prisma.business.create({ data: { name, sector, isApproved: false } });
     res.status(201).json(business);
   } catch (err) {
     console.error(err);
@@ -93,13 +97,10 @@ router.post("/", async (req: any, res) => {
   }
 });
 
-// PUT /businesses/:id/approve — onayla (frontend PUT kullanıyor)
+// PUT /businesses/:id/approve
 router.put("/:id/approve", async (req: any, res) => {
   try {
-    const user = req.user;
-    if (user.role !== "MAIN_ADMIN") {
-      return res.status(403).json({ message: "Yetkisiz" });
-    }
+    if (req.user.role !== "MAIN_ADMIN") return res.status(403).json({ message: "Yetkisiz" });
     const business = await prisma.business.update({
       where: { id: Number(req.params.id) },
       data: { isApproved: true },
@@ -114,11 +115,7 @@ router.put("/:id/approve", async (req: any, res) => {
 // DELETE /businesses/:id
 router.delete("/:id", async (req: any, res) => {
   try {
-    const user = req.user;
-    if (user.role !== "MAIN_ADMIN") {
-      return res.status(403).json({ message: "Yetkisiz" });
-    }
-    // Bağlı verileri sırayla sil
+    if (req.user.role !== "MAIN_ADMIN") return res.status(403).json({ message: "Yetkisiz" });
     const id = Number(req.params.id);
     await prisma.sale.deleteMany({ where: { businessId: id } });
     await prisma.order.deleteMany({ where: { businessId: id } });

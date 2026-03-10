@@ -7,6 +7,13 @@ const prisma = new PrismaClient();
 
 router.use(authenticate);
 
+const staffGuard = (req: any, res: any, next: any) => {
+  if (req.user.role === "STAFF") {
+    return res.status(403).json({ message: "Personel bu işlemi yapamaz" });
+  }
+  next();
+};
+
 // GET PRODUCTS
 router.get("/", async (req: any, res) => {
   try {
@@ -17,26 +24,18 @@ router.get("/", async (req: any, res) => {
       orderBy: { createdAt: "desc" },
     });
     res.json(products);
-  } catch (error) {
+  } catch {
     res.status(500).json({ message: "Sunucu hatası" });
   }
 });
 
-// CREATE PRODUCT
-router.post("/", async (req: any, res) => {
+// CREATE PRODUCT — STAFF erişemez
+router.post("/", staffGuard, async (req: any, res) => {
   try {
     const user = req.user;
     const { name, description, price, costPrice, stock, businessId: bodyBusinessId } = req.body;
-
-    // MAIN_ADMIN body'den businessId alır, diğerleri token'dan
-    const finalBusinessId =
-      user.role === "MAIN_ADMIN"
-        ? Number(bodyBusinessId)
-        : Number(user.businessId);
-
-    if (!finalBusinessId) {
-      return res.status(400).json({ message: "Business ID gerekli" });
-    }
+    const finalBusinessId = user.role === "MAIN_ADMIN" ? Number(bodyBusinessId) : Number(user.businessId);
+    if (!finalBusinessId) return res.status(400).json({ message: "Business ID gerekli" });
 
     const product = await prisma.product.create({
       data: {
@@ -48,7 +47,6 @@ router.post("/", async (req: any, res) => {
         businessId: finalBusinessId,
       },
     });
-
     res.status(201).json(product);
   } catch (error) {
     console.error(error);
@@ -56,8 +54,8 @@ router.post("/", async (req: any, res) => {
   }
 });
 
-// UPDATE PRODUCT
-router.put("/:id", async (req: any, res) => {
+// UPDATE PRODUCT — STAFF erişemez
+router.put("/:id", staffGuard, async (req: any, res) => {
   try {
     const user = req.user;
     const productId = Number(req.params.id);
@@ -80,7 +78,6 @@ router.put("/:id", async (req: any, res) => {
         stock: Number(stock),
       },
     });
-
     res.json(updated);
   } catch (error) {
     console.error(error);
@@ -88,8 +85,8 @@ router.put("/:id", async (req: any, res) => {
   }
 });
 
-// DELETE PRODUCT
-router.delete("/:id", async (req: any, res) => {
+// DELETE PRODUCT — STAFF erişemez
+router.delete("/:id", staffGuard, async (req: any, res) => {
   try {
     const user = req.user;
     const productId = Number(req.params.id);
@@ -101,16 +98,12 @@ router.delete("/:id", async (req: any, res) => {
       return res.status(403).json({ message: "Yetkisiz işlem" });
     }
 
-    // Önce bağlı satışları sil, sonra ürünü sil
     await prisma.sale.deleteMany({ where: { productId } });
     await prisma.product.delete({ where: { id: productId } });
-
     res.json({ message: "Ürün silindi" });
   } catch (error: any) {
     if (error.code === "P2003") {
-      return res.status(400).json({
-        message: "Bu ürün siparişlerde kullanıldığı için silinemez. Önce siparişleri silin.",
-      });
+      return res.status(400).json({ message: "Bu ürün siparişlerde kullanıldığı için silinemez." });
     }
     console.error(error);
     res.status(500).json({ message: "Sunucu hatası" });

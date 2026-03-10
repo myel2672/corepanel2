@@ -2,12 +2,12 @@ import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 
 const navItems = [
-  { to: '/dashboard', label: 'Panel', icon: '▦', roles: ['MAIN_ADMIN', 'ADMIN', 'STAFF'] },
-  { to: '/products', label: 'Ürünler', icon: '◈', roles: ['MAIN_ADMIN', 'ADMIN', 'STAFF'] },
+  { to: '/dashboard', label: 'Panel', icon: '▦', roles: ['MAIN_ADMIN', 'ADMIN'] },
+  { to: '/products', label: 'Ürünler', icon: '◈', roles: ['MAIN_ADMIN', 'ADMIN'] },
   { to: '/orders', label: 'Siparişler', icon: '◎', roles: ['MAIN_ADMIN', 'ADMIN', 'STAFF'] },
   { to: '/sales', label: 'Satışlar', icon: '◉', roles: ['MAIN_ADMIN', 'ADMIN', 'STAFF'] },
-  { to: '/customers', label: 'Müşteriler', icon: '◑', roles: ['MAIN_ADMIN', 'ADMIN', 'STAFF'] },
-  { to: '/business', label: 'İşletme', icon: '◐', roles: ['ADMIN', 'STAFF'] },
+  { to: '/customers', label: 'Müşteriler', icon: '◑', roles: ['MAIN_ADMIN', 'ADMIN'] },
+  { to: '/business', label: 'İşletme', icon: '◐', roles: ['ADMIN'] },
   { to: '/admin', label: 'İşletmeler', icon: '❖', roles: ['MAIN_ADMIN'] },
 ];
 
@@ -128,6 +128,21 @@ export default function Layout() {
         }
         .nav-icon { font-size: 16px; width: 20px; text-align: center; }
 
+        .staff-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          margin: 12px 14px 4px;
+          padding: 6px 12px;
+          background: rgba(99,102,241,0.08);
+          border: 1px solid rgba(99,102,241,0.15);
+          border-radius: 8px;
+          font-size: 11px;
+          color: rgba(167,139,250,0.7);
+          font-weight: 600;
+          letter-spacing: 0.5px;
+        }
+
         .sidebar-footer {
           padding: 16px;
           border-top: 1px solid rgba(255,255,255,0.06);
@@ -188,6 +203,11 @@ export default function Layout() {
 
           <nav className="sidebar-nav">
             <div className="sidebar-nav-label">Menü</div>
+
+            {user?.role === 'STAFF' && (
+              <div className="staff-badge">👤 Personel Hesabı</div>
+            )}
+
             {filtered.map((item) => (
               <Link
                 key={item.to}

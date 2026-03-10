@@ -1,9 +1,16 @@
-import express from "express"
-import { getSummary } from "../controllers/dashboardController"
-import { authenticate } from "../middleware/auth"
+import express from "express";
+import { getSummary } from "../controllers/dashboardController";
+import { authenticate } from "../middleware/auth";
 
-const router = express.Router()
+const router = express.Router();
 
-router.get("/summary", authenticate, getSummary)
+const staffGuard = (req: any, res: any, next: any) => {
+  if (req.user.role === "STAFF") {
+    return res.status(403).json({ message: "Personel bu sayfaya erişemez" });
+  }
+  next();
+};
 
-export default router
+router.get("/summary", authenticate, staffGuard, getSummary);
+
+export default router;

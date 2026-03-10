@@ -18,7 +18,14 @@ const staffGuard = (req: any, res: any, next: any) => {
 router.get("/", async (req: any, res) => {
   try {
     const user = req.user;
-    const where = user.role === "MAIN_ADMIN" ? {} : { businessId: Number(user.businessId) };
+    let where: any;
+
+    if (user.role === "MAIN_ADMIN") {
+      where = { businessId: null }; // Sadece MAIN_ADMIN'e ait ürünler
+    } else {
+      where = { businessId: Number(user.businessId) };
+    }
+
     const products = await prisma.product.findMany({
       where,
       orderBy: { createdAt: "desc" },
@@ -29,13 +36,19 @@ router.get("/", async (req: any, res) => {
   }
 });
 
-// CREATE PRODUCT — STAFF erişemez
+// CREATE PRODUCT
 router.post("/", staffGuard, async (req: any, res) => {
   try {
     const user = req.user;
-    const { name, description, price, costPrice, stock, businessId: bodyBusinessId } = req.body;
-    const finalBusinessId = user.role === "MAIN_ADMIN" ? Number(bodyBusinessId) : Number(user.businessId);
-    if (!finalBusinessId) return res.status(400).json({ message: "Business ID gerekli" });
+    const { name, description, price, costPrice, stock } = req.body;
+
+    // MAIN_ADMIN kendi ürünlerini ekler (businessId null)
+    // ADMIN kendi işletmesine ekler
+    const finalBusinessId = user.role === "MAIN_ADMIN" ? null : Number(user.businessId);
+
+    if (user.role !== "MAIN_ADMIN" && !finalBusinessId) {
+      return res.status(400).json({ message: "Business ID gerekli" });
+    }
 
     const product = await prisma.product.create({
       data: {
@@ -47,6 +60,7 @@ router.post("/", staffGuard, async (req: any, res) => {
         businessId: finalBusinessId,
       },
     });
+
     res.status(201).json(product);
   } catch (error) {
     console.error(error);
@@ -54,7 +68,7 @@ router.post("/", staffGuard, async (req: any, res) => {
   }
 });
 
-// UPDATE PRODUCT — STAFF erişemez
+// UPDATE PRODUCT
 router.put("/:id", staffGuard, async (req: any, res) => {
   try {
     const user = req.user;
@@ -64,7 +78,11 @@ router.put("/:id", staffGuard, async (req: any, res) => {
     const product = await prisma.product.findUnique({ where: { id: productId } });
     if (!product) return res.status(404).json({ message: "Ürün bulunamadı" });
 
-    if (user.role !== "MAIN_ADMIN" && product.businessId !== Number(user.businessId)) {
+    // MAIN_ADMIN sadece kendi (businessId null) ürünlerini düzenleyebilir
+    if (user.role === "MAIN_ADMIN" && product.businessId !== null) {
+      return res.status(403).json({ message: "Yetkisiz işlem" });
+    }
+    if (user.role === "ADMIN" && product.businessId !== Number(user.businessId)) {
       return res.status(403).json({ message: "Yetkisiz işlem" });
     }
 
@@ -85,7 +103,7 @@ router.put("/:id", staffGuard, async (req: any, res) => {
   }
 });
 
-// DELETE PRODUCT — STAFF erişemez
+// DELETE PRODUCT
 router.delete("/:id", staffGuard, async (req: any, res) => {
   try {
     const user = req.user;
@@ -94,7 +112,10 @@ router.delete("/:id", staffGuard, async (req: any, res) => {
     const product = await prisma.product.findUnique({ where: { id: productId } });
     if (!product) return res.status(404).json({ message: "Ürün bulunamadı" });
 
-    if (user.role !== "MAIN_ADMIN" && product.businessId !== Number(user.businessId)) {
+    if (user.role === "MAIN_ADMIN" && product.businessId !== null) {
+      return res.status(403).json({ message: "Yetkisiz işlem" });
+    }
+    if (user.role === "ADMIN" && product.businessId !== Number(user.businessId)) {
       return res.status(403).json({ message: "Yetkisiz işlem" });
     }
 

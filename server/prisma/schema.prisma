@@ -43,9 +43,9 @@ model Product {
   price       Float
   costPrice   Float?
   stock       Int      @default(0)
-  businessId  Int
+  businessId  Int?
   createdAt   DateTime @default(now())
-  business    Business @relation(fields: [businessId], references: [id])
+  business    Business? @relation(fields: [businessId], references: [id])
   orders      Order[]
   sales       Sale[]
 }

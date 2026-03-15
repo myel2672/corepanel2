@@ -5,83 +5,172 @@ import { authenticate, AuthRequest } from "../middleware/auth";
 const router = Router();
 const prisma = new PrismaClient();
 
-// Sales summary: ?period=daily|monthly&range=30
-router.get('/sales/summary', authenticate, async (req: AuthRequest, res) => {
+// Tarih aralığı yardımcısı
+const getDateRange = (startDate?: string, endDate?: string) => {
+  const end = endDate ? new Date(endDate) : new Date();
+  end.setHours(23, 59, 59, 999);
+  const start = startDate ? new Date(startDate) : new Date();
+  start.setDate(start.getDate() - 30);
+  start.setHours(0, 0, 0, 0);
+  return { start, end };
+};
+
+// GET /reports/summary?startDate=2024-01-01&endDate=2024-01-31
+router.get('/summary', authenticate, async (req: AuthRequest, res) => {
   try {
     const user = req.user as any;
-    const period = (req.query.period as string) || 'daily';
-    const range = Number(req.query.range || 30);
-    const where: any = {};
-    if (user.role !== 'MAIN_ADMIN') where.businessId = user.businessId;
+    const { start, end } = getDateRange(
+      req.query.startDate as string,
+      req.query.endDate as string
+    );
 
-    const start = new Date();
-    if (period === 'daily') start.setDate(start.getDate() - range);
-    else { start.setMonth(start.getMonth() - Math.max(range, 1)); }
-    where.date = { gte: start };
+    const businessFilter = user.role !== 'MAIN_ADMIN'
+      ? { businessId: Number(user.businessId) }
+      : {};
 
-    const sales = await prisma.sale.findMany({ where, orderBy: { date: 'asc' } });
-
-    const totalSales = sales.reduce((s, x) => s + (x.total || 0), 0);
-    const totalCost = sales.reduce((s, x) => s + ((x.unitCost || 0) * (x.quantity || 1)), 0);
-    const profit = totalSales - totalCost;
-
-    // Build series grouped by day or month
-    const seriesMap: Record<string, { total: number; cost: number; profit: number }> = {};
-    sales.forEach(s => {
-      const d = new Date(s.date);
-      const key = period === 'daily' ? d.toISOString().slice(0,10) : `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-      seriesMap[key] = seriesMap[key] || { total: 0, cost: 0, profit: 0 };
-      const tot = s.total || 0;
-      const cost = (s.unitCost || 0) * (s.quantity || 1);
-      seriesMap[key].total += tot;
-      seriesMap[key].cost += cost;
-      seriesMap[key].profit += tot - cost;
+    // Manuel satışlar
+    const sales = await prisma.sale.findMany({
+      where: { ...businessFilter, date: { gte: start, lte: end } },
+      include: { product: true },
+      orderBy: { date: 'asc' },
     });
 
-    const series = Object.keys(seriesMap).map(k => ({ label: k, ...seriesMap[k] }));
+    // Siparişler
+    const orders = await prisma.order.findMany({
+      where: { ...businessFilter, status: { not: 'CANCELLED' }, createdAt: { gte: start, lte: end } },
+      include: { product: true, customer: true },
+      orderBy: { createdAt: 'asc' },
+    });
 
-    res.json({ totalSales, totalCost, profit, series });
+    // Satış toplamları
+    const saleRevenue = sales.reduce((a, s) => a + (s.total || 0), 0);
+    const saleCost = sales.reduce((a, s) => a + (s.unitCost || 0) * (s.quantity || 1), 0);
+    const saleProfit = saleRevenue - saleCost;
+
+    // Sipariş toplamları
+    const orderRevenue = orders.reduce((a, o) => a + o.quantity * (o.product?.price || 0), 0);
+    const orderProfit = orderRevenue * 0.4;
+
+    // Günlük grafik verisi
+    const dailyMap: Record<string, { saleTotal: number; orderTotal: number }> = {};
+    sales.forEach(s => {
+      const key = new Date(s.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
+      if (!dailyMap[key]) dailyMap[key] = { saleTotal: 0, orderTotal: 0 };
+      dailyMap[key].saleTotal += s.total || 0;
+    });
+    orders.forEach(o => {
+      const key = new Date(o.createdAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
+      if (!dailyMap[key]) dailyMap[key] = { saleTotal: 0, orderTotal: 0 };
+      dailyMap[key].orderTotal += o.quantity * (o.product?.price || 0);
+    });
+    const dailySeries = Object.entries(dailyMap).map(([date, v]) => ({
+      date,
+      total: parseFloat((v.saleTotal + v.orderTotal).toFixed(2)),
+      saleTotal: parseFloat(v.saleTotal.toFixed(2)),
+      orderTotal: parseFloat(v.orderTotal.toFixed(2)),
+    }));
+
+    res.json({
+      period: { start: start.toISOString(), end: end.toISOString() },
+      sales: {
+        count: sales.length,
+        revenue: parseFloat(saleRevenue.toFixed(2)),
+        cost: parseFloat(saleCost.toFixed(2)),
+        profit: parseFloat(saleProfit.toFixed(2)),
+      },
+      orders: {
+        count: orders.length,
+        revenue: parseFloat(orderRevenue.toFixed(2)),
+        profit: parseFloat(orderProfit.toFixed(2)),
+      },
+      total: {
+        revenue: parseFloat((saleRevenue + orderRevenue).toFixed(2)),
+        profit: parseFloat((saleProfit + orderProfit).toFixed(2)),
+      },
+      dailySeries,
+      salesList: sales,
+      ordersList: orders,
+    });
   } catch (err) {
-    res.status(500).json({ message: 'Report failed', error: err });
+    console.error(err);
+    res.status(500).json({ message: 'Rapor alınamadı' });
   }
 });
 
-// CSV export of sales for period
-router.get('/sales/export', authenticate, async (req: AuthRequest, res) => {
+// GET /reports/export?startDate=...&endDate=...&type=sales|orders|all
+router.get('/export', authenticate, async (req: AuthRequest, res) => {
   try {
     const user = req.user as any;
-    const period = (req.query.period as string) || 'daily';
-    const range = Number(req.query.range || 30);
-    const where: any = {};
-    if (user.role !== 'MAIN_ADMIN') where.businessId = user.businessId;
+    const { start, end } = getDateRange(
+      req.query.startDate as string,
+      req.query.endDate as string
+    );
+    const type = (req.query.type as string) || 'all';
 
-    const start = new Date();
-    if (period === 'daily') start.setDate(start.getDate() - range);
-    else start.setMonth(start.getMonth() - Math.max(range, 1));
-    where.date = { gte: start };
+    const businessFilter = user.role !== 'MAIN_ADMIN'
+      ? { businessId: Number(user.businessId) }
+      : {};
 
-    const sales = await prisma.sale.findMany({ where, orderBy: { date: 'asc' } });
+    const rows: string[][] = [];
+    const header = ['Tür', 'Tarih', 'Ürün', 'Müşteri', 'Adet', 'Birim Fiyat', 'Maliyet', 'Toplam', 'Kâr'];
+    rows.push(header);
 
-    const rows = sales.map(s => [
-      s.date.toISOString(),
-      s.description || '',
-      s.category || '',
-      s.productId || '',
-      String(s.quantity || 0),
-      String(s.unitPrice || 0),
-      String(s.unitCost || 0),
-      String(s.total || 0),
-      s.businessId || '',
-    ]);
+    if (type === 'sales' || type === 'all') {
+      const sales = await prisma.sale.findMany({
+        where: { ...businessFilter, date: { gte: start, lte: end } },
+        include: { product: true },
+        orderBy: { date: 'asc' },
+      });
+      sales.forEach(s => {
+        const profit = (s.total || 0) - (s.unitCost || 0) * (s.quantity || 1);
+        rows.push([
+          'Satış',
+          new Date(s.date).toLocaleDateString('tr-TR'),
+          s.product?.name || s.description || '—',
+          '—',
+          String(s.quantity || 0),
+          String(s.unitPrice || 0),
+          String(s.unitCost || 0),
+          String(s.total || 0),
+          profit.toFixed(2),
+        ]);
+      });
+    }
 
-    const header = ['date','description','category','productId','quantity','unitPrice','unitCost','total','businessId'];
-    const csv = [header.join(','), ...rows.map(r => r.map(c => '"' + String(c).replace(/"/g,'""') + '"').join(','))].join('\n');
+    if (type === 'orders' || type === 'all') {
+      const orders = await prisma.order.findMany({
+        where: { ...businessFilter, status: { not: 'CANCELLED' }, createdAt: { gte: start, lte: end } },
+        include: { product: true, customer: true },
+        orderBy: { createdAt: 'asc' },
+      });
+      orders.forEach(o => {
+        const total = o.quantity * (o.product?.price || 0);
+        rows.push([
+          'Sipariş',
+          new Date(o.createdAt).toLocaleDateString('tr-TR'),
+          o.product?.name || '—',
+          o.customer?.name || '—',
+          String(o.quantity),
+          String(o.product?.price || 0),
+          '—',
+          total.toFixed(2),
+          (total * 0.4).toFixed(2),
+        ]);
+      });
+    }
 
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', `attachment; filename="sales_${period}.csv"`);
-    res.send(csv);
+    const csv = rows
+      .map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+
+    // BOM ekle — Excel Türkçe karakter sorunu için
+    const bom = '\uFEFF';
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="corepanel_rapor_${new Date().toISOString().slice(0,10)}.csv"`);
+    res.send(bom + csv);
   } catch (err) {
-    res.status(500).json({ message: 'Export failed', error: err });
+    console.error(err);
+    res.status(500).json({ message: 'Export başarısız' });
   }
 });
 

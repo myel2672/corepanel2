@@ -6,6 +6,7 @@ import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
 import OrdersPage from './pages/OrdersPage';
 import ProductsPage from './pages/ProductsPage';
+import ReportsPage from './pages/ReportsPage';
 import AcceptInvite from './pages/AcceptInvite';
 import SalesPage from './pages/SalesPage';
 import MainAdminDashboard from './pages/MainAdminDashboard';
@@ -38,6 +39,7 @@ function App() {
           <Route path="/admin" element={<MainAdminDashboard />} />
           <Route path="/business" element={<BusinessPanel />} />
           <Route path="/customers" element={<CustomersPage />} />
+          <Route path="/reports" element={<ReportsPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>

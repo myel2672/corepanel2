@@ -31,12 +31,12 @@ router.get("/", authenticate, staffGuard, async (req: AuthRequest, res: Response
 router.post("/", authenticate, staffGuard, async (req: AuthRequest, res: Response) => {
   try {
     const user = req.user as any;
-    const { name, phone, email } = req.body;
+    const { name, phone, email, address } = req.body;
     if (!name) return res.status(400).json({ error: "İsim zorunludur" });
     const businessId = user.role === "MAIN_ADMIN" ? Number(req.body.businessId) : Number(user.businessId);
     if (!businessId) return res.status(403).json({ error: "İşletme gerekli" });
     const customer = await prisma.customer.create({
-      data: { name, phone: phone || null, email: email || null, businessId },
+      data: { name, phone: phone || null, email: email || null, address: address || null, businessId },
     });
     res.status(201).json(customer);
   } catch {
@@ -47,14 +47,14 @@ router.post("/", authenticate, staffGuard, async (req: AuthRequest, res: Respons
 router.put("/:id", authenticate, staffGuard, async (req: AuthRequest, res: Response) => {
   try {
     const user = req.user as any;
-    const { name, phone, email } = req.body;
-    const existing = await prisma.customer.findFirst({
-      where: { id: Number(req.params.id), businessId: Number(user.businessId) },
-    });
+    const { name, phone, email, address } = req.body;
+    const where: any = { id: Number(req.params.id) };
+    if (user.role !== "MAIN_ADMIN") where.businessId = Number(user.businessId);
+    const existing = await prisma.customer.findFirst({ where });
     if (!existing) return res.status(404).json({ error: "Müşteri bulunamadı" });
     const customer = await prisma.customer.update({
       where: { id: Number(req.params.id) },
-      data: { name, phone, email },
+      data: { name, phone: phone || null, email: email || null, address: address || null },
     });
     res.json(customer);
   } catch {
@@ -65,13 +65,21 @@ router.put("/:id", authenticate, staffGuard, async (req: AuthRequest, res: Respo
 router.delete("/:id", authenticate, staffGuard, async (req: AuthRequest, res: Response) => {
   try {
     const user = req.user as any;
-    const existing = await prisma.customer.findFirst({
-      where: { id: Number(req.params.id), businessId: Number(user.businessId) },
-    });
+    const where: any = { id: Number(req.params.id) };
+    if (user.role !== "MAIN_ADMIN") where.businessId = Number(user.businessId);
+    const existing = await prisma.customer.findFirst({ where });
     if (!existing) return res.status(404).json({ error: "Müşteri bulunamadı" });
+
+    // İlişkili siparişlerdeki customerId'yi null yap, sonra müşteriyi sil
+    await prisma.order.updateMany({
+      where: { customerId: Number(req.params.id) },
+      data: { customerId: null },
+    });
+
     await prisma.customer.delete({ where: { id: Number(req.params.id) } });
     res.json({ message: "Müşteri silindi" });
-  } catch {
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "Müşteri silinemedi" });
   }
 });

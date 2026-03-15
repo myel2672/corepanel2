@@ -27,7 +27,7 @@ const generalLimiter = rateLimit({
 // Auth rate limit — login/register için daha sıkı
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: 100,
   message: { message: "Çok fazla giriş denemesi. 15 dakika sonra tekrar deneyin." },
 });
 

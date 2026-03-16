@@ -14,7 +14,13 @@ import inviteRoutes from "./routes/invite";
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: [
+    'http://localhost:5173',
+    'https://corepanel2.vercel.app'
+  ],
+  credentials: true
+}));
 app.use(express.json());
 
 // Genel rate limit — tüm istekler

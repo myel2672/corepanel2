@@ -62,9 +62,9 @@ export default function ProductsPage() {
   const [addLoading, setAddLoading] = useState(false);
   const user = useAuthStore((s) => s.user);
   const isMainAdmin = user?.role === 'MAIN_ADMIN';
-  const canEdit = user?.role === 'ADMIN' || user?.role === 'MAIN_ADMIN';
-
-  const fetchProducts = async () => {
+const canEdit = user?.role === 'ADMIN' || user?.role === 'MAIN_ADMIN';  
+const fetchProducts = async () => {
+    
     try {
       const res = await api.get('/products');
       setProducts(res.data);

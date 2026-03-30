@@ -3,12 +3,12 @@ import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 
 const navItems = [
-  { to: '/dashboard', label: 'Panel', icon: '▦', roles: ['MAIN_ADMIN', 'ADMIN'] },
-  { to: '/products', label: 'Ürünler', icon: '◈', roles: ['MAIN_ADMIN', 'ADMIN'] },
-  { to: '/orders', label: 'Siparişler', icon: '◎', roles: ['MAIN_ADMIN', 'ADMIN', 'STAFF'] },
-  { to: '/sales', label: 'Satışlar', icon: '◉', roles: ['MAIN_ADMIN', 'ADMIN', 'STAFF'] },
-  { to: '/customers', label: 'Müşteriler', icon: '◑', roles: ['MAIN_ADMIN', 'ADMIN'] },
-  { to: '/reports', label: 'Raporlar', icon: '◫', roles: ['MAIN_ADMIN', 'ADMIN'] },
+  { to: '/dashboard', label: 'Panel', icon: '▦', roles: ['MAIN_ADMIN', 'ADMIN', 'DEMO'] },
+  { to: '/products', label: 'Ürünler', icon: '◈', roles: ['MAIN_ADMIN', 'ADMIN', 'DEMO'] },
+  { to: '/orders', label: 'Siparişler', icon: '◎', roles: ['MAIN_ADMIN', 'ADMIN', 'STAFF', 'DEMO'] },
+  { to: '/sales', label: 'Satışlar', icon: '◉', roles: ['MAIN_ADMIN', 'ADMIN', 'STAFF', 'DEMO'] },
+  { to: '/customers', label: 'Müşteriler', icon: '◑', roles: ['MAIN_ADMIN', 'ADMIN', 'DEMO'] },
+  { to: '/reports', label: 'Raporlar', icon: '◫', roles: ['MAIN_ADMIN', 'ADMIN', 'DEMO'] },
   { to: '/business', label: 'İşletme', icon: '◐', roles: ['ADMIN'] },
   { to: '/admin', label: 'İşletmeler', icon: '❖', roles: ['MAIN_ADMIN'] },
 ];
@@ -37,10 +37,11 @@ export default function Layout() {
     .toUpperCase();
 
   const roleLabel: Record<string, string> = {
-    MAIN_ADMIN: 'Ana Yönetici',
-    ADMIN: 'İşletme Yöneticisi',
-    STAFF: 'Personel',
-  };
+  MAIN_ADMIN: 'Ana Yönetici',
+  ADMIN: 'İşletme Yöneticisi',
+  STAFF: 'Personel',
+  DEMO: 'Demo Hesabı',
+};
 
   const showBusinessSignupLink = user?.role === 'MAIN_ADMIN';
 

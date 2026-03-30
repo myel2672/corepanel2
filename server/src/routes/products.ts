@@ -8,7 +8,7 @@ const prisma = new PrismaClient();
 router.use(authenticate);
 
 const staffGuard = (req: any, res: any, next: any) => {
-  if (req.user.role === "STAFF") {
+  if (req.user.role === "STAFF" || req.user.role === "DEMO" || req.user.role === "DEMO") {
     return res.status(403).json({ message: "Personel bu işlemi yapamaz" });
   }
   next();
@@ -132,3 +132,4 @@ router.delete("/:id", staffGuard, async (req: any, res) => {
 });
 
 export default router;
+

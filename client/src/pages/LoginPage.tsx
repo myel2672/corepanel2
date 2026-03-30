@@ -8,6 +8,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
   const setAuth = useAuthStore((s) => s.setAuth);
   const navigate = useNavigate();
 
@@ -22,6 +23,19 @@ export default function LoginPage() {
       setError('E-posta veya şifre hatalı.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDemo = async () => {
+    setDemoLoading(true); setError('');
+    try {
+      const res = await api.post('/auth/demo-login');
+      setAuth(res.data.user, res.data.token, res.data.refreshToken);
+      navigate('/dashboard');
+    } catch {
+      setError('Demo girişi başarısız.');
+    } finally {
+      setDemoLoading(false);
     }
   };
 
@@ -217,6 +231,46 @@ export default function LoginPage() {
           box-shadow: 0 6px 20px rgba(99,102,241,0.4);
         }
         .login-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .login-demo-btn {
+          width: 100%;
+          padding: 13px;
+          background: #fff;
+          border: 1.5px solid #e2e8f0;
+          border-radius: 12px;
+          color: #0f172a;
+          font-size: 15px;
+          font-weight: 700;
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          cursor: pointer;
+          transition: all 0.15s;
+          margin-top: 10px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+        }
+        .login-demo-btn:hover:not(:disabled) {
+          border-color: #6366f1;
+          color: #6366f1;
+          transform: translateY(-1px);
+        }
+        .login-demo-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .login-divider {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin: 16px 0;
+          color: #cbd5e1;
+          font-size: 12px;
+          font-weight: 600;
+        }
+        .login-divider::before,
+        .login-divider::after {
+          content: '';
+          flex: 1;
+          height: 1px;
+          background: #e2e8f0;
+        }
         .login-error {
           background: #fef2f2;
           border: 1px solid #fecaca;
@@ -325,8 +379,14 @@ export default function LoginPage() {
               onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
             />
 
-            <button className="login-btn" onClick={handleLogin} disabled={loading}>
+            <button className="login-btn" onClick={handleLogin} disabled={loading || demoLoading}>
               {loading ? 'Giriş yapılıyor...' : 'Giriş Yap →'}
+            </button>
+
+            <div className="login-divider">veya</div>
+
+            <button className="login-demo-btn" onClick={handleDemo} disabled={loading || demoLoading}>
+              {demoLoading ? 'Yükleniyor...' : '🎯 Demo Hesabıyla Dene'}
             </button>
 
             <div className="login-forgot">

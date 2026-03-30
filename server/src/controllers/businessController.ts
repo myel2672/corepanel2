@@ -65,6 +65,11 @@ export const deleteBusiness = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const bizId = Number(id);
+    const userBusinessId = Number((req as any).user?.businessId);
+
+     if (bizId !== userBusinessId) {
+       return res.status(403).json({ message: "Bu işletmeyi silemezsiniz" });
+      }
     await prisma.sale.deleteMany({ where: { businessId: bizId } });
     await prisma.order.deleteMany({ where: { businessId: bizId } });
     await prisma.product.deleteMany({ where: { businessId: bizId } });

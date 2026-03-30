@@ -95,7 +95,7 @@ router.post("/login", async (req, res) => {
     const accessToken = jwt.sign(
       { id: user.id, email: user.email, role: user.role, businessId: user.businessId },
       JWT_SECRET,
-      { expiresIn: JWT_EXPIRES_IN } as any
+      { expiresIn: "15m" } as any
     );
 
     const refreshToken = jwt.sign(
@@ -145,7 +145,7 @@ router.post("/refresh", async (req, res) => {
     const accessToken = jwt.sign(
       { id: user.id, email: user.email, role: user.role, businessId: user.businessId },
       JWT_SECRET,
-      { expiresIn: JWT_EXPIRES_IN } as any
+      { expiresIn: "15m" } as any
     );
 
     res.json({ token: accessToken });
@@ -277,5 +277,23 @@ router.get("/me", authenticate, async (req: any, res) => {
     res.status(500).json({ message: "Sunucu hatası" });
   }
 });
-
+// Demo login
+router.post("/demo-login", async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({ where: { email: "demo@corepanel.com" } });
+    if (!user) return res.status(404).json({ message: "Demo hesap bulunamadi" });
+    const token = jwt.sign(
+      { id: user.id, role: user.role, businessId: user.businessId },
+      JWT_SECRET,
+      { expiresIn: "15m" }
+    );
+    res.json({
+      token,
+      refreshToken: token,
+      user: { id: user.id, email: user.email, role: user.role, businessId: user.businessId, name: "Demo Kullanıcı" }
+    });
+  } catch {
+    res.status(500).json({ message: "Demo giris basarisiz" });
+  }
+});
 export default router;

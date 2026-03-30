@@ -1,6 +1,6 @@
-import { Router } from "express";
+﻿import { Router } from "express";
 import { PrismaClient } from "@prisma/client";
-import { authenticate } from "../middleware/auth";
+import { authenticate, requireNotDemo } from "../middleware/auth";
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -18,12 +18,12 @@ router.get("/me", async (req: any, res) => {
     });
     res.json(sales);
   } catch {
-    res.status(500).json({ message: "Satışlar yüklenemedi" });
+    res.status(500).json({ message: "SatÄ±ÅŸlar yÃ¼klenemedi" });
   }
 });
 
 // POST /sales
-router.post("/", async (req: any, res) => {
+router.post("/", requireNotDemo, async (req: any, res) => {
   try {
     const user = req.user;
     const { productId, quantity, unitPrice, unitCost, description } = req.body;
@@ -34,7 +34,7 @@ router.post("/", async (req: any, res) => {
 
     const businessId = Number(user.businessId);
     if (!businessId) {
-      return res.status(400).json({ message: "Business ID bulunamadı" });
+      return res.status(400).json({ message: "Business ID bulunamadÄ±" });
     }
 
     const qty = Number(quantity);
@@ -42,10 +42,10 @@ router.post("/", async (req: any, res) => {
     const cost = Number(unitCost) || 0;
     const total = qty * price;
 
-    // Stok kontrolü ve düşme
+    // Stok kontrolÃ¼ ve dÃ¼ÅŸme
     if (productId) {
       const product = await prisma.product.findUnique({ where: { id: Number(productId) } });
-      if (!product) return res.status(404).json({ message: "Ürün bulunamadı" });
+      if (!product) return res.status(404).json({ message: "ÃœrÃ¼n bulunamadÄ±" });
       if (product.stock < qty) {
         return res.status(400).json({ message: `Stok yetersiz. Mevcut: ${product.stock}` });
       }
@@ -73,8 +73,11 @@ router.post("/", async (req: any, res) => {
     res.status(201).json(sale);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Satış kaydedilemedi" });
+    res.status(500).json({ message: "SatÄ±ÅŸ kaydedilemedi" });
   }
 });
 
 export default router;
+
+
+

@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 
+// Router’lar
 import authRoutes from "./routes/auth";
 import productRoutes from "./routes/products";
 import salesRoutes from "./routes/sales";
@@ -14,39 +15,43 @@ import inviteRoutes from "./routes/invite";
 
 const app = express();
 
-app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'https://corepanel2.vercel.app'
-  ],
-  credentials: true
-}));
+// CORS
+app.use(
+  cors({
+    origin: [
+      "http://localhost:3000",
+      "http://localhost:5173",
+      "https://corepanel2.vercel.app",
+    ],
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 
-// Genel rate limit — tüm istekler
+// Rate limit
 const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 dakika
+  windowMs: 15 * 60 * 1000,
   max: 100,
   message: { message: "Çok fazla istek gönderildi. 15 dakika sonra tekrar deneyin." },
 });
+app.use(generalLimiter);
 
-// Auth rate limit — login/register için daha sıkı
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
   message: { message: "Çok fazla giriş denemesi. 15 dakika sonra tekrar deneyin." },
 });
 
-app.use(generalLimiter);
+// Test route
+app.get("/", (_, res) => res.send("CorePanel API çalışıyor 🚀"));
 
-app.get("/", (req, res) => {
-  res.send("CorePanel API çalışıyor 🚀");
-});
-
+// Auth rate limit
 app.use("/auth/login", authLimiter);
 app.use("/auth/forgot-password", authLimiter);
 app.use("/auth/register", authLimiter);
 
+// Router’lar
 app.use("/auth", authRoutes);
 app.use("/products", productRoutes);
 app.use("/sales", salesRoutes);
@@ -55,10 +60,10 @@ app.use("/businesses", businessRoutes);
 app.use("/orders", orderRoutes);
 app.use("/customers", customerRoutes);
 app.use("/dashboard", dashboardRoutes);
-app.use("/invites", inviteRoutes);
+app.use("/invites", inviteRoutes); // inviteRoutes default export olmalı
 
-app.listen(5000, () => {
-  console.log("SERVER RUNNING ON 5000");
-});
+// Server
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`SERVER RUNNING ON ${PORT}`));
 
 export default app;

@@ -121,7 +121,8 @@ router.delete("/:id", async (req: any, res) => {
     await prisma.order.deleteMany({ where: { businessId: id } });
     await prisma.product.deleteMany({ where: { businessId: id } });
     await prisma.customer.deleteMany({ where: { businessId: id } });
-    await prisma.user.updateMany({ where: { businessId: id }, data: { businessId: null } });
+    await prisma.refreshToken.deleteMany({ where: { userId: { in: (await prisma.user.findMany({ where: { businessId: id }, select: { id: true } })).map(u => u.id) } } });
+await prisma.user.deleteMany({ where: { businessId: id } });
     await prisma.business.delete({ where: { id } });
     res.json({ message: "İşletme silindi" });
   } catch (err: any) {

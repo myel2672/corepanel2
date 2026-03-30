@@ -26,7 +26,9 @@ const styles = `
   .op-loading { display: flex; align-items: center; justify-content: center; height: 200px; color: #94a3b8; font-size: 14px; font-weight: 500; }
   .op-error { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; padding: 12px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; margin-bottom: 16px; }
   .op-success { background: #ecfdf5; border: 1px solid #a7f3d0; color: #059669; padding: 10px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; margin-bottom: 16px; }
+  .op-demo-notice { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; padding: 10px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; margin-bottom: 16px; }
   .op-status-select { padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; border: none; cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif; outline: none; }
+  .op-status-text { padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; display: inline-block; }
   .op-customer-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; background: #f0fdf4; color: #059669; border: 1px solid #bbf7d0; }
   .op-btn-invoice { padding: 5px 12px; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 7px; font-size: 11px; font-weight: 700; color: #6366f1; cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif; transition: all 0.15s; white-space: nowrap; }
   .op-btn-invoice:hover { background: #eef2ff; border-color: #c7d2fe; }
@@ -91,6 +93,7 @@ export default function OrdersPage() {
   const [addLoading, setAddLoading] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
   const user = useAuthStore((s) => s.user);
+  const isDemo = user?.role === 'DEMO';
   const [selectedProduct, setSelectedProduct] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState('');
   const [quantity, setQuantity] = useState('');
@@ -107,24 +110,15 @@ export default function OrdersPage() {
   };
 
   const fetchProducts = async () => {
-    try {
-      const res = await api.get('/products');
-      setProducts(res.data);
-    } catch { console.error('Ürünler yüklenemedi'); }
+    try { const res = await api.get('/products'); setProducts(res.data); } catch {}
   };
 
   const fetchCustomers = async () => {
-    try {
-      const res = await api.get('/customers');
-      setCustomers(res.data);
-    } catch { console.error('Müşteriler yüklenemedi'); }
+    try { const res = await api.get('/customers'); setCustomers(res.data); } catch {}
   };
 
   const fetchBusiness = async () => {
-    try {
-      const r = await api.get('/businesses/me');
-      setBusiness(r.data);
-    } catch {}
+    try { const r = await api.get('/businesses/me'); setBusiness(r.data); } catch {}
   };
 
   useEffect(() => { fetchOrders(); fetchProducts(); fetchCustomers(); fetchBusiness(); }, []);
@@ -174,33 +168,41 @@ export default function OrdersPage() {
         {formError && <div className="op-error">{formError}</div>}
         {formSuccess && <div className="op-success">✓ {formSuccess}</div>}
 
-        <div className="op-form">
-          <div className="op-field">
-            <span className="op-label">Ürün Seç</span>
-            <select className="op-select" style={{ width: 220 }} value={selectedProduct} onChange={e => { setSelectedProduct(e.target.value); setFormError(''); }}>
-              <option value="">— Ürün seçin —</option>
-              {products.map(p => (
-                <option key={p.id} value={String(p.id)}>{p.name} — {p.price} ₺ (Stok: {p.stock})</option>
-              ))}
-            </select>
+        {isDemo && (
+          <div className="op-demo-notice">
+            👁️ Demo hesabında yalnızca görüntüleme yapılabilir. Sipariş oluşturmak için kayıt olun.
           </div>
-          <div className="op-field">
-            <span className="op-label">Müşteri (İsteğe Bağlı)</span>
-            <select className="op-select" style={{ width: 200 }} value={selectedCustomer} onChange={e => { setSelectedCustomer(e.target.value); setFormError(''); }}>
-              <option value="">— Müşteri seçin —</option>
-              {customers.map(c => (
-                <option key={c.id} value={String(c.id)}>{c.name}{c.phone ? ` · ${c.phone}` : ''}</option>
-              ))}
-            </select>
+        )}
+
+        {!isDemo && (
+          <div className="op-form">
+            <div className="op-field">
+              <span className="op-label">Ürün Seç</span>
+              <select className="op-select" style={{ width: 220 }} value={selectedProduct} onChange={e => { setSelectedProduct(e.target.value); setFormError(''); }}>
+                <option value="">— Ürün seçin —</option>
+                {products.map(p => (
+                  <option key={p.id} value={String(p.id)}>{p.name} — {p.price} ₺ (Stok: {p.stock})</option>
+                ))}
+              </select>
+            </div>
+            <div className="op-field">
+              <span className="op-label">Müşteri (İsteğe Bağlı)</span>
+              <select className="op-select" style={{ width: 200 }} value={selectedCustomer} onChange={e => { setSelectedCustomer(e.target.value); setFormError(''); }}>
+                <option value="">— Müşteri seçin —</option>
+                {customers.map(c => (
+                  <option key={c.id} value={String(c.id)}>{c.name}{c.phone ? ` · ${c.phone}` : ''}</option>
+                ))}
+              </select>
+            </div>
+            <div className="op-field">
+              <span className="op-label">Adet</span>
+              <input className="op-input" style={{ width: 90 }} placeholder="1" type="number" min="1" value={quantity} onChange={e => { setQuantity(e.target.value); setFormError(''); }} />
+            </div>
+            <button className="op-btn" onClick={handleAddOrder} disabled={addLoading}>
+              {addLoading ? 'Oluşturuluyor...' : '+ Sipariş Oluştur'}
+            </button>
           </div>
-          <div className="op-field">
-            <span className="op-label">Adet</span>
-            <input className="op-input" style={{ width: 90 }} placeholder="1" type="number" min="1" value={quantity} onChange={e => { setQuantity(e.target.value); setFormError(''); }} />
-          </div>
-          <button className="op-btn" onClick={handleAddOrder} disabled={addLoading}>
-            {addLoading ? 'Oluşturuluyor...' : '+ Sipariş Oluştur'}
-          </button>
-        </div>
+        )}
 
         <div className="op-card">
           {orders.length === 0 ? (
@@ -230,8 +232,7 @@ export default function OrdersPage() {
                       <td className="op-td">
                         {order.customer
                           ? <span className="op-customer-badge">👤 {order.customer.name}</span>
-                          : <span style={{ color: '#cbd5e1' }}>—</span>
-                        }
+                          : <span style={{ color: '#cbd5e1' }}>—</span>}
                       </td>
                       <td className="op-td" style={{ fontWeight: 600 }}>{order.quantity}</td>
                       <td className="op-td" style={{ color: '#6366f1', fontWeight: 800 }}>{total.toFixed(2)} ₺</td>
@@ -239,16 +240,22 @@ export default function OrdersPage() {
                         {new Date(order.createdAt).toLocaleDateString('tr-TR')}
                       </td>
                       <td className="op-td">
-                        <select
-                          className="op-status-select"
-                          value={order.status}
-                          onChange={e => handleStatusChange(order.id, e.target.value)}
-                          style={{ background: sc.bg, color: sc.color }}
-                        >
-                          {Object.entries(STATUS_LABELS).map(([val, label]) => (
-                            <option key={val} value={val}>{label}</option>
-                          ))}
-                        </select>
+                        {isDemo ? (
+                          <span className="op-status-text" style={{ background: sc.bg, color: sc.color }}>
+                            {STATUS_LABELS[order.status] || order.status}
+                          </span>
+                        ) : (
+                          <select
+                            className="op-status-select"
+                            value={order.status}
+                            onChange={e => handleStatusChange(order.id, e.target.value)}
+                            style={{ background: sc.bg, color: sc.color }}
+                          >
+                            {Object.entries(STATUS_LABELS).map(([val, label]) => (
+                              <option key={val} value={val}>{label}</option>
+                            ))}
+                          </select>
+                        )}
                       </td>
                       <td className="op-td">
                         <button className="op-btn-invoice" onClick={() => setSelectedInvoice(order)}>
@@ -272,7 +279,6 @@ export default function OrdersPage() {
               <button className="inv-btn-close" onClick={() => setSelectedInvoice(null)}>✕ Kapat</button>
               <button className="inv-btn-print" onClick={() => window.print()}>🖨️ Yazdır / PDF</button>
             </div>
-
             <div className="inv-doc">
               <div className="inv-head">
                 <div>
@@ -284,33 +290,20 @@ export default function OrdersPage() {
                   <div className="inv-number-val">#{String(selectedInvoice.id).padStart(6, '0')}</div>
                 </div>
               </div>
-
               <div className="inv-divider" />
-
               <div className="inv-meta">
                 <div>
                   <div className="inv-meta-label">Tarih</div>
-                  <div className="inv-meta-val">
-                    {new Date(selectedInvoice.createdAt).toLocaleDateString('tr-TR', {
-                      day: 'numeric', month: 'long', year: 'numeric'
-                    })}
-                  </div>
+                  <div className="inv-meta-val">{new Date(selectedInvoice.createdAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
                 </div>
                 <div>
                   <div className="inv-meta-label">Saat</div>
-                  <div className="inv-meta-val">
-                    {new Date(selectedInvoice.createdAt).toLocaleTimeString('tr-TR', {
-                      hour: '2-digit', minute: '2-digit'
-                    })}
-                  </div>
+                  <div className="inv-meta-val">{new Date(selectedInvoice.createdAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</div>
                 </div>
                 {selectedInvoice.customer && (
                   <div style={{ gridColumn: '1/-1' }}>
                     <div className="inv-meta-label">Müşteri</div>
-                    <div className="inv-meta-val">
-                      {selectedInvoice.customer.name}
-                      {selectedInvoice.customer.phone ? ` · ${selectedInvoice.customer.phone}` : ''}
-                    </div>
+                    <div className="inv-meta-val">{selectedInvoice.customer.name}{selectedInvoice.customer.phone ? ` · ${selectedInvoice.customer.phone}` : ''}</div>
                   </div>
                 )}
                 <div style={{ gridColumn: '1/-1' }}>
@@ -318,7 +311,6 @@ export default function OrdersPage() {
                   <div className="inv-meta-val">{STATUS_LABELS[selectedInvoice.status] || selectedInvoice.status}</div>
                 </div>
               </div>
-
               <table className="inv-table">
                 <thead>
                   <tr>
@@ -330,36 +322,19 @@ export default function OrdersPage() {
                 </thead>
                 <tbody>
                   <tr>
-                    <td style={{ color: '#0f172a', fontWeight: 600 }}>
-                      {selectedInvoice.product?.name || '—'}
-                    </td>
+                    <td style={{ color: '#0f172a', fontWeight: 600 }}>{selectedInvoice.product?.name || '—'}</td>
                     <td style={{ textAlign: 'center' }}>{selectedInvoice.quantity}</td>
                     <td style={{ textAlign: 'right' }}>{(selectedInvoice.product?.price || 0).toFixed(2)} ₺</td>
-                    <td style={{ textAlign: 'right', color: '#6366f1', fontWeight: 700 }}>
-                      {(selectedInvoice.quantity * (selectedInvoice.product?.price || 0)).toFixed(2)} ₺
-                    </td>
+                    <td style={{ textAlign: 'right', color: '#6366f1', fontWeight: 700 }}>{(selectedInvoice.quantity * (selectedInvoice.product?.price || 0)).toFixed(2)} ₺</td>
                   </tr>
                 </tbody>
               </table>
-
               <div className="inv-total-box">
-                <div className="inv-total-row">
-                  <span>Ara Toplam</span>
-                  <span>{(selectedInvoice.quantity * (selectedInvoice.product?.price || 0)).toFixed(2)} ₺</span>
-                </div>
-                <div className="inv-total-row">
-                  <span>KDV (%0)</span>
-                  <span>0.00 ₺</span>
-                </div>
-                <div className="inv-total-row main">
-                  <span>GENEL TOPLAM</span>
-                  <span>{(selectedInvoice.quantity * (selectedInvoice.product?.price || 0)).toFixed(2)} ₺</span>
-                </div>
+                <div className="inv-total-row"><span>Ara Toplam</span><span>{(selectedInvoice.quantity * (selectedInvoice.product?.price || 0)).toFixed(2)} ₺</span></div>
+                <div className="inv-total-row"><span>KDV (%0)</span><span>0.00 ₺</span></div>
+                <div className="inv-total-row main"><span>GENEL TOPLAM</span><span>{(selectedInvoice.quantity * (selectedInvoice.product?.price || 0)).toFixed(2)} ₺</span></div>
               </div>
-
-              <div className="inv-footer">
-                Corepanel Yönetim Sistemi · Bu belge elektronik ortamda oluşturulmuştur.
-              </div>
+              <div className="inv-footer">Corepanel Yönetim Sistemi · Bu belge elektronik ortamda oluşturulmuştur.</div>
             </div>
           </div>
         </div>

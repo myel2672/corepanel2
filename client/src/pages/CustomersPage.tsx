@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
+import { useAuthStore } from '../store/authStore';
 
 interface Customer {
   id: number;
@@ -44,6 +45,7 @@ const styles = `
   .cp-stat:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); transform: translateY(-1px); }
   .cp-stat-val { font-size: 28px; font-weight: 800; color: #6366f1; letter-spacing: -0.8px; }
   .cp-stat-lbl { font-size: 12px; color: #94a3b8; margin-top: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  .cp-demo-notice { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; padding: 10px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; margin-bottom: 16px; }
 
   /* MODAL ORTAK */
   .cp-modal-bg { position: fixed; inset: 0; background: rgba(15,23,42,0.4); display: flex; align-items: center; justify-content: center; z-index: 999; backdrop-filter: blur(4px); }
@@ -92,6 +94,8 @@ export default function CustomersPage() {
   const [form, setForm] = useState({ name: '', phone: '', email: '', address: '' });
   const [search, setSearch] = useState('');
   const [error, setError] = useState('');
+  const user = useAuthStore((s) => s.user);
+  const isDemo = user?.role === 'DEMO';
 
   const fetchCustomers = async () => {
     try {
@@ -154,10 +158,18 @@ export default function CustomersPage() {
             <div className="cp-title">Müşteriler</div>
             <div className="cp-subtitle">{customers.length} müşteri kayıtlı</div>
           </div>
-          <button className="cp-btn" onClick={() => { setShowForm(true); setEditingCustomer(null); setForm({ name: '', phone: '', email: '', address: '' }); setError(''); }}>
-            + Yeni Müşteri
-          </button>
+          {!isDemo && (
+            <button className="cp-btn" onClick={() => { setShowForm(true); setEditingCustomer(null); setForm({ name: '', phone: '', email: '', address: '' }); setError(''); }}>
+              + Yeni Müşteri
+            </button>
+          )}
         </div>
+
+        {isDemo && (
+          <div className="cp-demo-notice">
+            👁️ Demo hesabında yalnızca görüntüleme yapılabilir. Müşteri eklemek, düzenlemek veya silmek için kayıt olun.
+          </div>
+        )}
 
         <div className="cp-stats">
           <div className="cp-stat">
@@ -205,8 +217,12 @@ export default function CustomersPage() {
                     <td>{new Date(c.createdAt).toLocaleDateString('tr-TR')}</td>
                     <td style={{ display: 'flex', gap: '8px' }}>
                       <button className="cp-btn-sm cp-btn-view" onClick={() => openDetail(c)}>Detay</button>
-                      <button className="cp-btn-sm cp-btn-edit" onClick={() => handleEdit(c)}>Düzenle</button>
-                      <button className="cp-btn-sm cp-btn-del" onClick={() => handleDelete(c.id)}>Sil</button>
+                      {!isDemo && (
+                        <>
+                          <button className="cp-btn-sm cp-btn-edit" onClick={() => handleEdit(c)}>Düzenle</button>
+                          <button className="cp-btn-sm cp-btn-del" onClick={() => handleDelete(c.id)}>Sil</button>
+                        </>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -231,36 +247,26 @@ export default function CustomersPage() {
             </div>
 
             <div className="cp-detail-body">
-              {/* İletişim bilgileri */}
               <div className="cp-detail-section">
                 <div className="cp-detail-section-title">İletişim Bilgileri</div>
                 <div className="cp-detail-grid">
                   <div className="cp-detail-field">
                     <div className="cp-detail-field-label">Telefon</div>
-                    {detailCustomer.phone
-                      ? <div className="cp-detail-field-val">{detailCustomer.phone}</div>
-                      : <div className="cp-detail-field-empty">Belirtilmedi</div>}
+                    {detailCustomer.phone ? <div className="cp-detail-field-val">{detailCustomer.phone}</div> : <div className="cp-detail-field-empty">Belirtilmedi</div>}
                   </div>
                   <div className="cp-detail-field">
                     <div className="cp-detail-field-label">E-Posta</div>
-                    {detailCustomer.email
-                      ? <div className="cp-detail-field-val">{detailCustomer.email}</div>
-                      : <div className="cp-detail-field-empty">Belirtilmedi</div>}
+                    {detailCustomer.email ? <div className="cp-detail-field-val">{detailCustomer.email}</div> : <div className="cp-detail-field-empty">Belirtilmedi</div>}
                   </div>
                   <div className="cp-detail-field full">
                     <div className="cp-detail-field-label">Adres</div>
-                    {detailCustomer.address
-                      ? <div className="cp-detail-field-val">{detailCustomer.address}</div>
-                      : <div className="cp-detail-field-empty">Belirtilmedi</div>}
+                    {detailCustomer.address ? <div className="cp-detail-field-val">{detailCustomer.address}</div> : <div className="cp-detail-field-empty">Belirtilmedi</div>}
                   </div>
                 </div>
               </div>
 
-              {/* Sipariş geçmişi */}
               <div className="cp-detail-section">
-                <div className="cp-detail-section-title">
-                  Sipariş Geçmişi ({detailCustomer.orders?.length || 0})
-                </div>
+                <div className="cp-detail-section-title">Sipariş Geçmişi ({detailCustomer.orders?.length || 0})</div>
                 {!detailCustomer.orders || detailCustomer.orders.length === 0 ? (
                   <div className="cp-order-empty">Henüz sipariş yok</div>
                 ) : (
@@ -268,13 +274,9 @@ export default function CustomersPage() {
                     <div key={o.id} className="cp-order-item">
                       <div>
                         <div className="cp-order-name">{o.product?.name || `Sipariş #${o.id}`}</div>
-                        <div className="cp-order-date">
-                          {new Date(o.createdAt).toLocaleDateString('tr-TR')} · {o.quantity} adet
-                        </div>
+                        <div className="cp-order-date">{new Date(o.createdAt).toLocaleDateString('tr-TR')} · {o.quantity} adet</div>
                       </div>
-                      <div className="cp-order-total">
-                        {o.product ? (o.quantity * o.product.price).toFixed(2) : '—'} ₺
-                      </div>
+                      <div className="cp-order-total">{o.product ? (o.quantity * o.product.price).toFixed(2) : '—'} ₺</div>
                     </div>
                   ))
                 )}
@@ -283,15 +285,19 @@ export default function CustomersPage() {
 
             <div className="cp-detail-footer">
               <button className="cp-btn-cancel" onClick={() => setShowDetail(false)}>Kapat</button>
-              <button className="cp-btn-sm cp-btn-edit" style={{ padding: '9px 18px', fontSize: 13 }} onClick={() => handleEdit(detailCustomer)}>Düzenle</button>
-              <button className="cp-btn-sm cp-btn-del" style={{ padding: '9px 18px', fontSize: 13 }} onClick={() => handleDelete(detailCustomer.id)}>Sil</button>
+              {!isDemo && (
+                <>
+                  <button className="cp-btn-sm cp-btn-edit" style={{ padding: '9px 18px', fontSize: 13 }} onClick={() => handleEdit(detailCustomer)}>Düzenle</button>
+                  <button className="cp-btn-sm cp-btn-del" style={{ padding: '9px 18px', fontSize: 13 }} onClick={() => handleDelete(detailCustomer.id)}>Sil</button>
+                </>
+              )}
             </div>
           </div>
         </div>
       )}
 
       {/* FORM MODAL */}
-      {showForm && (
+      {showForm && !isDemo && (
         <div className="cp-modal-bg" onClick={() => setShowForm(false)}>
           <div className="cp-modal" onClick={e => e.stopPropagation()}>
             <div className="cp-modal-title">{editingCustomer ? 'Müşteriyi Düzenle' : 'Yeni Müşteri'}</div>

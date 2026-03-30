@@ -41,17 +41,15 @@ const styles = `
   .sp-stat-value.accent { color: #6366f1; }
   .sp-error { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; padding: 12px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; margin-bottom: 16px; }
   .sp-success { background: #ecfdf5; border: 1px solid #a7f3d0; color: #059669; padding: 10px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; margin-bottom: 16px; }
+  .sp-demo-notice { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; padding: 12px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; margin-bottom: 20px; }
   .sp-btn-invoice { padding: 5px 12px; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 7px; font-size: 11px; font-weight: 700; color: #6366f1; cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif; transition: all 0.15s; white-space: nowrap; flex-shrink: 0; }
   .sp-btn-invoice:hover { background: #eef2ff; border-color: #c7d2fe; }
 
-  /* ── FATURA MODAL ── */
   .inv-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); }
   .inv-modal { background: #fff; border-radius: 20px; width: 560px; max-width: 95vw; max-height: 90vh; overflow-y: auto; box-shadow: 0 24px 60px rgba(0,0,0,0.2); }
   .inv-actions { display: flex; justify-content: flex-end; gap: 10px; padding: 16px 20px; border-bottom: 1px solid #f1f5f9; }
   .inv-btn-print { padding: 9px 20px; background: #6366f1; border: none; border-radius: 9px; color: #fff; font-size: 13px; font-weight: 700; font-family: 'Plus Jakarta Sans', sans-serif; cursor: pointer; box-shadow: 0 2px 8px rgba(99,102,241,0.25); }
   .inv-btn-close { padding: 9px 16px; background: #f1f5f9; border: none; border-radius: 9px; color: #64748b; font-size: 13px; font-weight: 700; font-family: 'Plus Jakarta Sans', sans-serif; cursor: pointer; }
-
-  /* ── FATURA İÇERİĞİ ── */
   .inv-doc { padding: 40px; font-family: 'Plus Jakarta Sans', sans-serif; }
   .inv-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 36px; }
   .inv-logo { font-size: 22px; font-weight: 800; background: linear-gradient(135deg, #6366f1, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; letter-spacing: -0.5px; }
@@ -95,25 +93,18 @@ export default function SalesPage() {
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
   const [business, setBusiness] = useState<any>(null);
   const user = useAuthStore((s) => s.user);
+  const isDemo = user?.role === 'DEMO';
 
   const fetchSales = async () => {
-    try {
-      const r = await api.get('/sales/me');
-      setSales(r.data || []);
-    } catch (err: any) {
-      console.error('Satışlar yüklenemedi:', err?.response?.data || err.message);
-    }
+    try { const r = await api.get('/sales/me'); setSales(r.data || []); } catch {}
   };
 
   const fetchProducts = async () => {
-    try {
-      const r = await api.get('/products');
-      setProducts(r.data || []);
-    } catch { console.error('Ürünler yüklenemedi'); }
+    try { const r = await api.get('/products'); setProducts(r.data || []); } catch {}
   };
 
   const fetchBusiness = async () => {
-    try { const r = await api.get("/businesses/me"); setBusiness(r.data); } catch {}
+    try { const r = await api.get('/businesses/me'); setBusiness(r.data); } catch {}
   };
 
   useEffect(() => { fetchSales(); fetchProducts(); fetchBusiness(); }, []);
@@ -129,7 +120,6 @@ export default function SalesPage() {
     if (!productId) { setFormError('Lütfen ürün seçin.'); return; }
     if (quantity < 1) { setFormError('Adet en az 1 olmalıdır.'); return; }
     if (unitPrice <= 0) { setFormError('Geçerli bir birim fiyat girin.'); return; }
-
     setSaveLoading(true); setFormError(''); setFormSuccess('');
     try {
       await api.post('/sales', { productId, quantity, unitPrice, unitCost, description });
@@ -141,10 +131,6 @@ export default function SalesPage() {
     } finally {
       setSaveLoading(false);
     }
-  };
-
-  const handlePrint = () => {
-    window.print();
   };
 
   const totalRevenue = sales.reduce((a: number, s: any) => a + (s.total || 0), 0);
@@ -179,46 +165,54 @@ export default function SalesPage() {
           </div>
         </div>
 
-        <div className="sp-grid">
-          <div className="sp-form">
-            <div className="sp-form-title">Yeni Satış Ekle</div>
-            <div className="sp-field">
-              <label className="sp-label">Ürün</label>
-              <select className="sp-select" value={productId} onChange={e => handleProductChange(e.target.value)}>
-                <option value="">— Ürün seçin —</option>
-                {products.map((p: any) => (
-                  <option key={p.id} value={p.id}>{p.name} (Stok: {p.stock})</option>
-                ))}
-              </select>
-            </div>
-            <div className="sp-field">
-              <label className="sp-label">Açıklama (opsiyonel)</label>
-              <input className="sp-input" placeholder="Satış notu..." value={description} onChange={e => setDescription(e.target.value)} />
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <div className="sp-field">
-                <label className="sp-label">Adet</label>
-                <input className="sp-input" type="number" min={1} value={quantity} onChange={e => { setQuantity(Number(e.target.value)); setFormError(''); }} />
-              </div>
-              <div className="sp-field">
-                <label className="sp-label">Birim Fiyat (₺)</label>
-                <input className="sp-input" type="number" min={0} value={unitPrice} onChange={e => { setUnitPrice(Number(e.target.value)); setFormError(''); }} />
-              </div>
-            </div>
-            <div className="sp-field">
-              <label className="sp-label">Maliyet (₺)</label>
-              <input className="sp-input" type="number" min={0} value={unitCost} onChange={e => setUnitCost(Number(e.target.value))} />
-            </div>
-            {previewTotal > 0 && (
-              <div className="sp-total-preview">
-                <span>Toplam</span>
-                <span>{previewTotal.toFixed(2)} ₺</span>
-              </div>
-            )}
-            <button className="sp-btn" onClick={handleCreate} disabled={saveLoading}>
-              {saveLoading ? 'Kaydediliyor...' : 'Satışı Kaydet'}
-            </button>
+        {isDemo ? (
+          <div className="sp-demo-notice">
+            👁️ Demo hesabında yalnızca görüntüleme yapılabilir. Satış kaydetmek için kayıt olun.
           </div>
+        ) : null}
+
+        <div className="sp-grid" style={isDemo ? { gridTemplateColumns: '1fr' } : {}}>
+          {!isDemo && (
+            <div className="sp-form">
+              <div className="sp-form-title">Yeni Satış Ekle</div>
+              <div className="sp-field">
+                <label className="sp-label">Ürün</label>
+                <select className="sp-select" value={productId} onChange={e => handleProductChange(e.target.value)}>
+                  <option value="">— Ürün seçin —</option>
+                  {products.map((p: any) => (
+                    <option key={p.id} value={p.id}>{p.name} (Stok: {p.stock})</option>
+                  ))}
+                </select>
+              </div>
+              <div className="sp-field">
+                <label className="sp-label">Açıklama (opsiyonel)</label>
+                <input className="sp-input" placeholder="Satış notu..." value={description} onChange={e => setDescription(e.target.value)} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div className="sp-field">
+                  <label className="sp-label">Adet</label>
+                  <input className="sp-input" type="number" min={1} value={quantity} onChange={e => { setQuantity(Number(e.target.value)); setFormError(''); }} />
+                </div>
+                <div className="sp-field">
+                  <label className="sp-label">Birim Fiyat (₺)</label>
+                  <input className="sp-input" type="number" min={0} value={unitPrice} onChange={e => { setUnitPrice(Number(e.target.value)); setFormError(''); }} />
+                </div>
+              </div>
+              <div className="sp-field">
+                <label className="sp-label">Maliyet (₺)</label>
+                <input className="sp-input" type="number" min={0} value={unitCost} onChange={e => setUnitCost(Number(e.target.value))} />
+              </div>
+              {previewTotal > 0 && (
+                <div className="sp-total-preview">
+                  <span>Toplam</span>
+                  <span>{previewTotal.toFixed(2)} ₺</span>
+                </div>
+              )}
+              <button className="sp-btn" onClick={handleCreate} disabled={saveLoading}>
+                {saveLoading ? 'Kaydediliyor...' : 'Satışı Kaydet'}
+              </button>
+            </div>
+          )}
 
           <div>
             <div className="sp-list-card">
@@ -246,9 +240,7 @@ export default function SalesPage() {
                           <div className="sp-item-total">{(s.total || 0).toFixed(2)} ₺</div>
                           <div className="sp-item-profit">+{profit.toFixed(2)} ₺ kâr</div>
                         </div>
-                        <button className="sp-btn-invoice" onClick={() => setSelectedInvoice(s)}>
-                          🧾 Fatura
-                        </button>
+                        <button className="sp-btn-invoice" onClick={() => setSelectedInvoice(s)}>🧾 Fatura</button>
                       </div>
                     </div>
                   );
@@ -259,47 +251,33 @@ export default function SalesPage() {
         </div>
       </div>
 
-      {/* FATURA MODAL */}
       {selectedInvoice && (
         <div className="inv-overlay" onClick={() => setSelectedInvoice(null)}>
           <div className="inv-modal" onClick={e => e.stopPropagation()}>
             <div className="inv-actions">
               <button className="inv-btn-close" onClick={() => setSelectedInvoice(null)}>✕ Kapat</button>
-              <button className="inv-btn-print" onClick={handlePrint}>🖨️ Yazdır / PDF</button>
+              <button className="inv-btn-print" onClick={() => window.print()}>🖨️ Yazdır / PDF</button>
             </div>
-
             <div className="inv-doc">
-              {/* Başlık */}
               <div className="inv-head">
                 <div>
-                  <div className="inv-logo">{business?.name || "Corepanel"}</div>
-                  <div className="inv-tag">{business?.sector ? business.sector + " · " : ""}Satış Faturası</div>
+                  <div className="inv-logo">{business?.name || 'Corepanel'}</div>
+                  <div className="inv-tag">{business?.sector ? business.sector + ' · ' : ''}Satış Faturası</div>
                 </div>
                 <div className="inv-number">
                   <div className="inv-number-label">Fatura No</div>
                   <div className="inv-number-val">#{String(selectedInvoice.id).padStart(6, '0')}</div>
                 </div>
               </div>
-
               <div className="inv-divider" />
-
-              {/* Meta */}
               <div className="inv-meta">
                 <div>
                   <div className="inv-meta-label">Tarih</div>
-                  <div className="inv-meta-val">
-                    {new Date(selectedInvoice.date || selectedInvoice.createdAt).toLocaleDateString('tr-TR', {
-                      day: 'numeric', month: 'long', year: 'numeric'
-                    })}
-                  </div>
+                  <div className="inv-meta-val">{new Date(selectedInvoice.date || selectedInvoice.createdAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
                 </div>
                 <div>
                   <div className="inv-meta-label">Saat</div>
-                  <div className="inv-meta-val">
-                    {new Date(selectedInvoice.date || selectedInvoice.createdAt).toLocaleTimeString('tr-TR', {
-                      hour: '2-digit', minute: '2-digit'
-                    })}
-                  </div>
+                  <div className="inv-meta-val">{new Date(selectedInvoice.date || selectedInvoice.createdAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</div>
                 </div>
                 {selectedInvoice.description && (
                   <div style={{ gridColumn: '1/-1' }}>
@@ -308,8 +286,6 @@ export default function SalesPage() {
                   </div>
                 )}
               </div>
-
-              {/* Tablo */}
               <table className="inv-table">
                 <thead>
                   <tr>
@@ -321,37 +297,19 @@ export default function SalesPage() {
                 </thead>
                 <tbody>
                   <tr>
-                    <td style={{ color: '#0f172a', fontWeight: 600 }}>
-                      {selectedInvoice.product?.name || selectedInvoice.description || 'Ürün/Hizmet'}
-                    </td>
+                    <td style={{ color: '#0f172a', fontWeight: 600 }}>{selectedInvoice.product?.name || selectedInvoice.description || 'Ürün/Hizmet'}</td>
                     <td style={{ textAlign: 'center' }}>{selectedInvoice.quantity}</td>
                     <td style={{ textAlign: 'right' }}>{(selectedInvoice.unitPrice || 0).toFixed(2)} ₺</td>
-                    <td style={{ textAlign: 'right', color: '#6366f1', fontWeight: 700 }}>
-                      {(selectedInvoice.total || 0).toFixed(2)} ₺
-                    </td>
+                    <td style={{ textAlign: 'right', color: '#6366f1', fontWeight: 700 }}>{(selectedInvoice.total || 0).toFixed(2)} ₺</td>
                   </tr>
                 </tbody>
               </table>
-
-              {/* Toplam kutusu */}
               <div className="inv-total-box">
-                <div className="inv-total-row">
-                  <span>Ara Toplam</span>
-                  <span>{(selectedInvoice.total || 0).toFixed(2)} ₺</span>
-                </div>
-                <div className="inv-total-row">
-                  <span>KDV (%0)</span>
-                  <span>0.00 ₺</span>
-                </div>
-                <div className="inv-total-row main">
-                  <span>GENEL TOPLAM</span>
-                  <span>{(selectedInvoice.total || 0).toFixed(2)} ₺</span>
-                </div>
+                <div className="inv-total-row"><span>Ara Toplam</span><span>{(selectedInvoice.total || 0).toFixed(2)} ₺</span></div>
+                <div className="inv-total-row"><span>KDV (%0)</span><span>0.00 ₺</span></div>
+                <div className="inv-total-row main"><span>GENEL TOPLAM</span><span>{(selectedInvoice.total || 0).toFixed(2)} ₺</span></div>
               </div>
-
-              <div className="inv-footer">
-                Corepanel Yönetim Sistemi · Bu belge elektronik ortamda oluşturulmuştur.
-              </div>
+              <div className="inv-footer">Corepanel Yönetim Sistemi · Bu belge elektronik ortamda oluşturulmuştur.</div>
             </div>
           </div>
         </div>

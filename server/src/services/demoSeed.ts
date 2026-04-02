@@ -49,6 +49,10 @@ export async function seedDemoData(prisma: PrismaClient): Promise<DemoSeedResult
         name: DEMO_BUSINESS_NAME,
         sector: "Kafe",
         isApproved: true,
+        planName: "Demo",
+        monthlyFee: 0,
+        subscriptionStatus: "TRIAL",
+        trialEndsAt: daysAgo(-14),
       },
     });
   } else {
@@ -58,6 +62,11 @@ export async function seedDemoData(prisma: PrismaClient): Promise<DemoSeedResult
         name: DEMO_BUSINESS_NAME,
         sector: "Kafe",
         isApproved: true,
+        planName: "Demo",
+        monthlyFee: 0,
+        subscriptionStatus: "TRIAL",
+        trialEndsAt: daysAgo(-14),
+        nextBillingDate: null,
       },
     });
   }
@@ -80,6 +89,7 @@ export async function seedDemoData(prisma: PrismaClient): Promise<DemoSeedResult
   });
 
   await prisma.refreshToken.deleteMany({ where: { userId: demoUser.id } });
+  await prisma.payment.deleteMany({ where: { businessId: demoBusiness.id } });
   await prisma.order.deleteMany({ where: { businessId: demoBusiness.id } });
   await prisma.sale.deleteMany({ where: { businessId: demoBusiness.id } });
   await prisma.customer.deleteMany({ where: { businessId: demoBusiness.id } });

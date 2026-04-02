@@ -23,17 +23,23 @@ model User {
 }
 
 model Business {
-  id         Int        @id @default(autoincrement())
-  name       String
-  sector     String
-  isApproved Boolean    @default(false)
-  createdAt  DateTime   @default(now())
-  users      User[]
-  products   Product[]
-  orders     Order[]
-  customers  Customer[]
-  sales      Sale[]
-  invites    Invite[]
+  id                 Int       @id @default(autoincrement())
+  name               String
+  sector             String
+  isApproved         Boolean   @default(false)
+  planName           String    @default("Starter")
+  monthlyFee         Float     @default(0)
+  subscriptionStatus String    @default("ACTIVE")
+  nextBillingDate    DateTime?
+  trialEndsAt        DateTime?
+  createdAt          DateTime  @default(now())
+  users              User[]
+  products           Product[]
+  orders             Order[]
+  customers          Customer[]
+  sales              Sale[]
+  invites            Invite[]
+  payments           Payment[]
 }
 
 model Product {
@@ -90,6 +96,18 @@ model Sale {
   business    Business @relation(fields: [businessId], references: [id])
   product     Product? @relation(fields: [productId], references: [id])
 }
+
+model Payment {
+  id         Int      @id @default(autoincrement())
+  businessId Int
+  amount     Float
+  status     String   @default("PAID")
+  note       String?
+  paidAt     DateTime?
+  createdAt  DateTime @default(now())
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+}
+
 model RefreshToken {
   id        Int      @id @default(autoincrement())
   token     String   @unique

@@ -1,204 +1,365 @@
-import { Response } from "express"
-import { PrismaClient } from "@prisma/client"
-import { AuthRequest } from "../middleware/auth"
+import { Response } from "express";
+import { PrismaClient } from "@prisma/client";
+import { AuthRequest } from "../middleware/auth";
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient();
+
+const getLastDays = (count: number) =>
+  Array.from({ length: count }, (_, index) => {
+    const date = new Date();
+    date.setDate(date.getDate() - (count - 1 - index));
+    date.setHours(0, 0, 0, 0);
+    return date;
+  });
+
+const getLastMonths = (count: number) =>
+  Array.from({ length: count }, (_, index) => {
+    const date = new Date();
+    date.setMonth(date.getMonth() - (count - 1 - index));
+    date.setDate(1);
+    date.setHours(0, 0, 0, 0);
+    return date;
+  });
+
+const toMonthKey = (date: Date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+
+const toCurrency = (value: number) => parseFloat(value.toFixed(2));
 
 export const getSummary = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = Number(req.user?.id)
-    const user = await prisma.user.findUnique({ where: { id: userId } })
-    if (!user) return res.status(401).json({ error: "User not found" })
+    const userId = Number(req.user?.id);
+    const user = await prisma.user.findUnique({ where: { id: userId } });
 
-    const isMainAdmin = user.role === "MAIN_ADMIN"
-    const businessId = user.businessId || null
+    if (!user) {
+      return res.status(401).json({ error: "User not found" });
+    }
 
-    // ── MAIN ADMIN ──
+    const isMainAdmin = user.role === "MAIN_ADMIN";
+    const businessId = user.businessId || null;
+
     if (isMainAdmin) {
-      const totalBusinesses = await prisma.business.count()
-      const totalCustomers = await prisma.customer.count()
-      const totalProducts = await prisma.product.count()
-      const totalOrders = await prisma.order.count()
+      const [businesses, totalUsers, payments] = await Promise.all([
+        prisma.business.findMany({
+          include: {
+            users: {
+              select: { id: true },
+            },
+          },
+          orderBy: { createdAt: "desc" },
+        }),
+        prisma.user.count({
+          where: {
+            role: { not: "MAIN_ADMIN" },
+          },
+        }),
+        prisma.payment.findMany({
+          where: { status: "PAID" },
+          orderBy: { paidAt: "desc" },
+        }),
+      ]);
 
-      const orders = await prisma.order.findMany({
-        where: { status: { not: "CANCELLED" } },
-        include: { product: true },
-      })
-      let orderRevenue = 0
-      orders.forEach((o: any) => { orderRevenue += o.quantity * o.product.price })
+      const totalBusinesses = businesses.length;
+      const approvedBusinesses = businesses.filter((business) => business.isApproved).length;
+      const pendingBusinesses = businesses.filter((business) => !business.isApproved).length;
+      const activeSubscriptions = businesses.filter(
+        (business) =>
+          business.isApproved &&
+          business.subscriptionStatus === "ACTIVE" &&
+          (business.monthlyFee || 0) > 0
+      ).length;
+      const monthlyRecurringRevenue = toCurrency(
+        businesses.reduce((sum, business) => {
+          if (!business.isApproved || business.subscriptionStatus !== "ACTIVE") {
+            return sum;
+          }
 
-      const sales = await prisma.sale.findMany()
-      let saleRevenue = 0
-      sales.forEach((s: any) => { saleRevenue += s.total || 0 })
+          return sum + (business.monthlyFee || 0);
+        }, 0)
+      );
 
-      const totalSales = orderRevenue + saleRevenue
-      const profit = totalSales * 0.4
+      const now = new Date();
+      const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
-      const last7Days = Array.from({ length: 7 }, (_, i) => {
-        const d = new Date()
-        d.setDate(d.getDate() - (6 - i))
-        d.setHours(0, 0, 0, 0)
-        return d
-      })
+      const collectedThisMonth = toCurrency(
+        payments.reduce((sum, payment) => {
+          if (!payment.paidAt) {
+            return sum;
+          }
 
-      const dailySales = await Promise.all(last7Days.map(async (day) => {
-        const nextDay = new Date(day)
-        nextDay.setDate(nextDay.getDate() + 1)
-        const dayOrders = await prisma.order.findMany({
-          where: { status: { not: "CANCELLED" }, createdAt: { gte: day, lt: nextDay } },
-          include: { product: true },
-        })
-        let total = 0
-        dayOrders.forEach((o: any) => { total += o.quantity * o.product.price })
-        const daySales = await prisma.sale.findMany({ where: { date: { gte: day, lt: nextDay } } })
-        daySales.forEach((s: any) => { total += s.total || 0 })
-        return { date: day.toLocaleDateString("tr-TR", { weekday: "short", day: "numeric" }), total: parseFloat(total.toFixed(2)) }
-      }))
+          if (payment.paidAt >= currentMonthStart && payment.paidAt < nextMonthStart) {
+            return sum + payment.amount;
+          }
 
-      const last6Months = Array.from({ length: 6 }, (_, i) => {
-        const d = new Date()
-        d.setMonth(d.getMonth() - (5 - i))
-        d.setDate(1); d.setHours(0, 0, 0, 0)
-        return d
-      })
+          return sum;
+        }, 0)
+      );
 
-      const monthlySales = await Promise.all(last6Months.map(async (month) => {
-        const nextMonth = new Date(month)
-        nextMonth.setMonth(nextMonth.getMonth() + 1)
-        const monthOrders = await prisma.order.findMany({
-          where: { status: { not: "CANCELLED" }, createdAt: { gte: month, lt: nextMonth } },
-          include: { product: true },
-        })
-        let total = 0
-        monthOrders.forEach((o: any) => { total += o.quantity * o.product.price })
-        const monthSales = await prisma.sale.findMany({ where: { date: { gte: month, lt: nextMonth } } })
-        monthSales.forEach((s: any) => { total += s.total || 0 })
-        return { date: month.toLocaleDateString("tr-TR", { month: "short" }), total: parseFloat(total.toFixed(2)) }
-      }))
+      const overdueSubscriptions = businesses.filter((business) => {
+        if (!business.isApproved || business.subscriptionStatus !== "ACTIVE") {
+          return false;
+        }
+
+        if ((business.monthlyFee || 0) <= 0 || !business.nextBillingDate) {
+          return false;
+        }
+
+        return business.nextBillingDate < now;
+      }).length;
+
+      const last6Months = getLastMonths(6);
+      const monthlyBusinessMap = new Map<string, number>();
+      const monthlyCollectionMap = new Map<string, number>();
+
+      last6Months.forEach((month) => {
+        monthlyBusinessMap.set(toMonthKey(month), 0);
+        monthlyCollectionMap.set(toMonthKey(month), 0);
+      });
+
+      businesses.forEach((business) => {
+        const key = toMonthKey(new Date(business.createdAt));
+        if (monthlyBusinessMap.has(key)) {
+          monthlyBusinessMap.set(key, (monthlyBusinessMap.get(key) || 0) + 1);
+        }
+      });
+
+      payments.forEach((payment) => {
+        if (!payment.paidAt) {
+          return;
+        }
+
+        const key = toMonthKey(new Date(payment.paidAt));
+        if (monthlyCollectionMap.has(key)) {
+          monthlyCollectionMap.set(key, toCurrency((monthlyCollectionMap.get(key) || 0) + payment.amount));
+        }
+      });
+
+      const monthlyBusinesses = last6Months.map((month) => ({
+        date: month.toLocaleDateString("tr-TR", { month: "short" }),
+        total: monthlyBusinessMap.get(toMonthKey(month)) || 0,
+      }));
+
+      const monthlyCollections = last6Months.map((month) => ({
+        date: month.toLocaleDateString("tr-TR", { month: "short" }),
+        total: monthlyCollectionMap.get(toMonthKey(month)) || 0,
+      }));
+
+      const recentBusinesses = businesses.slice(0, 6).map((business) => ({
+        id: business.id,
+        name: business.name,
+        sector: business.sector,
+        createdAt: business.createdAt,
+        isApproved: business.isApproved,
+        planName: business.planName,
+        monthlyFee: business.monthlyFee,
+        subscriptionStatus: business.subscriptionStatus,
+        nextBillingDate: business.nextBillingDate,
+        trialEndsAt: business.trialEndsAt,
+        userCount: business.users.length,
+      }));
 
       return res.json({
         isMainAdmin: true,
-        totalBusinesses, totalCustomers, totalProducts, totalOrders,
-        totalSales: parseFloat(totalSales.toFixed(2)),
-        orderRevenue: parseFloat(orderRevenue.toFixed(2)),
-        saleRevenue: parseFloat(saleRevenue.toFixed(2)),
-        profit: parseFloat(profit.toFixed(2)),
-        dailySales, monthlySales, top: [], lowStock: [],
-      })
+        totalBusinesses,
+        approvedBusinesses,
+        pendingBusinesses,
+        totalUsers,
+        activeSubscriptions,
+        monthlyRecurringRevenue,
+        collectedThisMonth,
+        overdueSubscriptions,
+        monthlyBusinesses,
+        monthlyCollections,
+        recentBusinesses,
+      });
     }
 
-    // ── İŞLETME ADMIN ──
-    if (!businessId) return res.json({
-      totalOrders: 0, totalSales: 0, totalCost: 0, profit: 0,
-      orderRevenue: 0, saleRevenue: 0,
-      top: [], lowStock: [], dailySales: [], monthlySales: [],
-    })
+    if (!businessId) {
+      return res.json({
+        totalOrders: 0,
+        totalSales: 0,
+        totalCost: 0,
+        profit: 0,
+        orderRevenue: 0,
+        saleRevenue: 0,
+        top: [],
+        lowStock: [],
+        dailySales: [],
+        monthlySales: [],
+      });
+    }
 
-    const bId = Number(businessId)
+    const numericBusinessId = Number(businessId);
 
     const totalOrders = await prisma.order.count({
-      where: { businessId: bId, status: { not: "CANCELLED" } }
-    })
-    const totalSalesCount = await prisma.sale.count({ where: { businessId: bId } })
+      where: {
+        businessId: numericBusinessId,
+        status: { not: "CANCELLED" },
+      },
+    });
+
+    const totalSalesCount = await prisma.sale.count({
+      where: { businessId: numericBusinessId },
+    });
+
     const orders = await prisma.order.findMany({
-      where: { businessId: bId, status: { not: "CANCELLED" } },
+      where: {
+        businessId: numericBusinessId,
+        status: { not: "CANCELLED" },
+      },
       include: { product: true },
-    })
-    let orderRevenue = 0
-    orders.forEach((o: any) => { orderRevenue += o.quantity * o.product.price })
+    });
 
     const sales = await prisma.sale.findMany({
-      where: { businessId: bId },
+      where: { businessId: numericBusinessId },
       include: { product: true },
-    })
-    let saleRevenue = 0
-    let saleCost = 0
-    sales.forEach((s: any) => {
-      saleRevenue += s.total || 0
-      saleCost += (s.unitCost || 0) * (s.quantity || 0)
-    })
+    });
 
-    const totalSales = orderRevenue + saleRevenue
-    const totalCost = saleCost + orderRevenue * 0.6
-    const profit = (saleRevenue - saleCost) + orderRevenue * 0.4
+    const orderRevenue = orders.reduce((sum, order) => {
+      return sum + order.quantity * (order.product?.price || 0);
+    }, 0);
 
-    // En çok satanlar
-    const topMap: Record<number, { product: any; sold: number }> = {}
-    orders.forEach((o: any) => {
-      if (!topMap[o.productId]) topMap[o.productId] = { product: o.product, sold: 0 }
-      topMap[o.productId].sold += o.quantity
-    })
-    sales.forEach((s: any) => {
-      if (s.productId) {
-        if (!topMap[s.productId]) topMap[s.productId] = { product: s.product || { name: s.description || '—' }, sold: 0 }
-        topMap[s.productId].sold += s.quantity || 0
+    const saleRevenue = sales.reduce((sum, sale) => {
+      return sum + (sale.total || 0);
+    }, 0);
+
+    const saleCost = sales.reduce((sum, sale) => {
+      return sum + (sale.unitCost || 0) * (sale.quantity || 0);
+    }, 0);
+
+    const totalSales = orderRevenue + saleRevenue;
+    const totalCost = saleCost + orderRevenue * 0.6;
+    const profit = (saleRevenue - saleCost) + orderRevenue * 0.4;
+
+    const topMap: Record<number, { product: { id?: number; name: string }; sold: number }> = {};
+
+    orders.forEach((order) => {
+      const product = order.product;
+      if (!product) {
+        return;
       }
-    })
-    const top = Object.values(topMap).sort((a, b) => b.sold - a.sold).slice(0, 5)
+
+      if (!topMap[order.productId]) {
+        topMap[order.productId] = {
+          product: { id: product.id, name: product.name },
+          sold: 0,
+        };
+      }
+
+      topMap[order.productId].sold += order.quantity;
+    });
+
+    sales.forEach((sale) => {
+      if (!sale.productId) {
+        return;
+      }
+
+      if (!topMap[sale.productId]) {
+        topMap[sale.productId] = {
+          product: {
+            id: sale.product?.id,
+            name: sale.product?.name || sale.description || "—",
+          },
+          sold: 0,
+        };
+      }
+
+      topMap[sale.productId].sold += sale.quantity || 0;
+    });
+
+    const top = Object.values(topMap)
+      .sort((left, right) => right.sold - left.sold)
+      .slice(0, 5);
 
     const lowStock = await prisma.product.findMany({
-      where: { businessId: bId, stock: { lt: 5 } }
-    })
+      where: {
+        businessId: numericBusinessId,
+        stock: { lt: 5 },
+      },
+    });
 
-    const last7Days = Array.from({ length: 7 }, (_, i) => {
-      const d = new Date()
-      d.setDate(d.getDate() - (6 - i))
-      d.setHours(0, 0, 0, 0)
-      return d
-    })
+    const dailySales = await Promise.all(
+      getLastDays(7).map(async (day) => {
+        const nextDay = new Date(day);
+        nextDay.setDate(nextDay.getDate() + 1);
 
-    const dailySales = await Promise.all(last7Days.map(async (day) => {
-      const nextDay = new Date(day)
-      nextDay.setDate(nextDay.getDate() + 1)
-      const dayOrders = await prisma.order.findMany({
-        where: { businessId: bId, status: { not: "CANCELLED" }, createdAt: { gte: day, lt: nextDay } },
-        include: { product: true },
+        const [dayOrders, daySalesRows] = await Promise.all([
+          prisma.order.findMany({
+            where: {
+              businessId: numericBusinessId,
+              status: { not: "CANCELLED" },
+              createdAt: { gte: day, lt: nextDay },
+            },
+            include: { product: true },
+          }),
+          prisma.sale.findMany({
+            where: {
+              businessId: numericBusinessId,
+              date: { gte: day, lt: nextDay },
+            },
+          }),
+        ]);
+
+        const total =
+          dayOrders.reduce((sum, order) => sum + order.quantity * (order.product?.price || 0), 0) +
+          daySalesRows.reduce((sum, sale) => sum + (sale.total || 0), 0);
+
+        return {
+          date: day.toLocaleDateString("tr-TR", { weekday: "short", day: "numeric" }),
+          total: toCurrency(total),
+        };
       })
-      let total = 0
-      dayOrders.forEach((o: any) => { total += o.quantity * o.product.price })
-      const daySales = await prisma.sale.findMany({
-        where: { businessId: bId, date: { gte: day, lt: nextDay } }
-      })
-      daySales.forEach((s: any) => { total += s.total || 0 })
-      return { date: day.toLocaleDateString("tr-TR", { weekday: "short", day: "numeric" }), total: parseFloat(total.toFixed(2)) }
-    }))
+    );
 
-    const last6Months = Array.from({ length: 6 }, (_, i) => {
-      const d = new Date()
-      d.setMonth(d.getMonth() - (5 - i))
-      d.setDate(1); d.setHours(0, 0, 0, 0)
-      return d
-    })
+    const monthlySales = await Promise.all(
+      getLastMonths(6).map(async (month) => {
+        const nextMonth = new Date(month);
+        nextMonth.setMonth(nextMonth.getMonth() + 1);
 
-    const monthlySales = await Promise.all(last6Months.map(async (month) => {
-      const nextMonth = new Date(month)
-      nextMonth.setMonth(nextMonth.getMonth() + 1)
-      const monthOrders = await prisma.order.findMany({
-        where: { businessId: bId, status: { not: "CANCELLED" }, createdAt: { gte: month, lt: nextMonth } },
-        include: { product: true },
-      })
-      let total = 0
-      monthOrders.forEach((o: any) => { total += o.quantity * o.product.price })
-      const monthSales = await prisma.sale.findMany({
-        where: { businessId: bId, date: { gte: month, lt: nextMonth } }
-      })
-      monthSales.forEach((s: any) => { total += s.total || 0 })
-      return { date: month.toLocaleDateString("tr-TR", { month: "short" }), total: parseFloat(total.toFixed(2)) }
-    }))
+        const [monthOrders, monthSalesRows] = await Promise.all([
+          prisma.order.findMany({
+            where: {
+              businessId: numericBusinessId,
+              status: { not: "CANCELLED" },
+              createdAt: { gte: month, lt: nextMonth },
+            },
+            include: { product: true },
+          }),
+          prisma.sale.findMany({
+            where: {
+              businessId: numericBusinessId,
+              date: { gte: month, lt: nextMonth },
+            },
+          }),
+        ]);
 
-    res.json({
+        const total =
+          monthOrders.reduce((sum, order) => sum + order.quantity * (order.product?.price || 0), 0) +
+          monthSalesRows.reduce((sum, sale) => sum + (sale.total || 0), 0);
+
+        return {
+          date: month.toLocaleDateString("tr-TR", { month: "short" }),
+          total: toCurrency(total),
+        };
+      })
+    );
+
+    return res.json({
       totalOrders,
       totalSalesCount,
-      totalSales: parseFloat(totalSales.toFixed(2)),
-      totalCost: parseFloat(totalCost.toFixed(2)),
-      profit: parseFloat(profit.toFixed(2)),
-      orderRevenue: parseFloat(orderRevenue.toFixed(2)),
-      saleRevenue: parseFloat(saleRevenue.toFixed(2)),
-      top, lowStock, dailySales, monthlySales,
-    })
-
+      totalSales: toCurrency(totalSales),
+      totalCost: toCurrency(totalCost),
+      profit: toCurrency(profit),
+      orderRevenue: toCurrency(orderRevenue),
+      saleRevenue: toCurrency(saleRevenue),
+      top,
+      lowStock,
+      dailySales,
+      monthlySales,
+    });
   } catch (error) {
-    console.error(error)
-    res.status(500).json({ error: "Dashboard data error" })
+    console.error(error);
+    return res.status(500).json({ error: "Dashboard data error" });
   }
-}
+};

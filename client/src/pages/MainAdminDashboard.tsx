@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import api from '../api/axios';
+import { useEffect, useMemo, useState } from "react";
+import api from "../api/axios";
 
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
@@ -8,30 +8,42 @@ const styles = `
   .ma-header-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
   .ma-title { font-size: 26px; font-weight: 800; color: #0f172a; letter-spacing: -0.6px; }
   .ma-subtitle { font-size: 14px; color: #94a3b8; margin-top: 4px; font-weight: 500; }
-  .ma-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 28px; }
+  .ma-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-bottom: 28px; }
   .ma-stat { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); position: relative; overflow: hidden; transition: box-shadow 0.2s, transform 0.2s; }
   .ma-stat:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.08); transform: translateY(-2px); }
-  .ma-stat::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; border-radius: 16px 16px 0 0; }
+  .ma-stat::after { content: ''; position: absolute; inset: 0 0 auto 0; height: 3px; border-radius: 16px 16px 0 0; }
   .ma-stat.s1::after { background: linear-gradient(90deg, #6366f1, #818cf8); }
   .ma-stat.s2::after { background: linear-gradient(90deg, #10b981, #34d399); }
   .ma-stat.s3::after { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+  .ma-stat.s4::after { background: linear-gradient(90deg, #ec4899, #f472b6); }
   .ma-stat-label { font-size: 11px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: #94a3b8; margin-bottom: 10px; }
   .ma-stat-value { font-size: 32px; font-weight: 800; letter-spacing: -1px; }
   .ma-stat-value.purple { color: #6366f1; }
   .ma-stat-value.green { color: #059669; }
   .ma-stat-value.orange { color: #d97706; }
+  .ma-stat-value.pink { color: #db2777; }
+  .ma-stat-sub { margin-top: 8px; color: #94a3b8; font-size: 12px; font-weight: 500; line-height: 1.5; }
   .ma-section-title { font-size: 11px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: #94a3b8; margin-bottom: 14px; }
-  .ma-list { display: grid; gap: 10px; }
-  .ma-card { background: #fff; border: 1.5px solid #e2e8f0; border-radius: 16px; padding: 18px 22px; display: flex; align-items: center; justify-content: space-between; gap: 16px; transition: border-color 0.15s, box-shadow 0.15s; box-shadow: 0 1px 3px rgba(0,0,0,0.04); flex-wrap: wrap; }
+  .ma-list { display: grid; gap: 12px; }
+  .ma-card { background: #fff; border: 1.5px solid #e2e8f0; border-radius: 18px; padding: 20px 22px; display: flex; align-items: center; justify-content: space-between; gap: 18px; transition: border-color 0.15s, box-shadow 0.15s; box-shadow: 0 1px 3px rgba(0,0,0,0.04); flex-wrap: wrap; }
   .ma-card:hover { border-color: #c7d2fe; box-shadow: 0 4px 16px rgba(99,102,241,0.08); }
-  .ma-card-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
-  .ma-avatar { width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, #6366f1, #818cf8); display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 800; color: #fff; flex-shrink: 0; }
+  .ma-card-left { display: flex; align-items: flex-start; gap: 14px; min-width: 0; flex: 1; }
+  .ma-avatar { width: 46px; height: 46px; border-radius: 14px; background: linear-gradient(135deg, #6366f1, #818cf8); display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 800; color: #fff; flex-shrink: 0; }
   .ma-biz-name { font-size: 15px; font-weight: 700; color: #0f172a; }
-  .ma-biz-sector { font-size: 13px; color: #64748b; margin-top: 2px; font-weight: 500; }
-  .ma-biz-date { font-size: 12px; color: #94a3b8; margin-top: 3px; font-weight: 500; }
-  .ma-badge { padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; }
-  .ma-badge-approved { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
-  .ma-badge-pending { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
+  .ma-biz-sector { font-size: 13px; color: #64748b; margin-top: 3px; font-weight: 500; }
+  .ma-biz-date { font-size: 12px; color: #94a3b8; margin-top: 4px; font-weight: 500; }
+  .ma-meta-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .ma-chip { display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; padding: 5px 10px; font-size: 11px; font-weight: 700; }
+  .ma-chip-plan { background: #eef2ff; color: #4f46e5; border: 1px solid #c7d2fe; }
+  .ma-chip-money { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
+  .ma-chip-date { background: #f8fafc; color: #475569; border: 1px solid #cbd5e1; }
+  .ma-badge { padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; border: 1px solid transparent; }
+  .ma-badge-approved { background: #ecfdf5; color: #059669; border-color: #a7f3d0; }
+  .ma-badge-pending { background: #fffbeb; color: #d97706; border-color: #fde68a; }
+  .ma-badge-active { background: #ecfdf5; color: #059669; border-color: #a7f3d0; }
+  .ma-badge-trial { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
+  .ma-badge-paused { background: #f8fafc; color: #475569; border-color: #cbd5e1; }
+  .ma-badge-cancelled { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
   .ma-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   .ma-btn { padding: 8px 18px; border-radius: 10px; font-size: 13px; font-weight: 700; font-family: 'Plus Jakarta Sans', sans-serif; cursor: pointer; border: none; transition: all 0.15s; }
   .ma-btn:disabled { opacity: 0.65; cursor: not-allowed; transform: none; box-shadow: none; }
@@ -43,12 +55,12 @@ const styles = `
   .ma-btn-secondary:hover:not(:disabled) { background: #e0e7ff; }
   .ma-btn-primary { background: #6366f1; color: #fff; border: none; box-shadow: 0 2px 8px rgba(99,102,241,0.25); }
   .ma-btn-primary:hover:not(:disabled) { background: #4f46e5; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(99,102,241,0.35); }
-  .ma-empty { padding: 40px; text-align: center; color: #cbd5e1; font-size: 14px; font-weight: 500; }
+  .ma-empty { padding: 40px; text-align: center; color: #cbd5e1; font-size: 14px; font-weight: 500; background: #fff; border: 1px dashed #e2e8f0; border-radius: 16px; }
   .ma-loading { display: flex; align-items: center; justify-content: center; height: 200px; color: #94a3b8; font-size: 14px; font-weight: 500; }
   .ma-error { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; padding: 12px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; margin-bottom: 16px; }
   .ma-success { background: #ecfdf5; border: 1px solid #a7f3d0; color: #059669; padding: 10px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; margin-bottom: 16px; }
-  .ma-modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.4); display: flex; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); }
-  .ma-modal { background: #fff; border: 1px solid #e2e8f0; border-radius: 20px; padding: 32px; width: 100%; max-width: 480px; box-shadow: 0 20px 60px rgba(0,0,0,0.15); }
+  .ma-modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.4); display: flex; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); padding: 20px; }
+  .ma-modal { background: #fff; border: 1px solid #e2e8f0; border-radius: 20px; padding: 32px; width: 100%; max-width: 520px; box-shadow: 0 20px 60px rgba(0,0,0,0.15); max-height: 90vh; overflow: auto; }
   .ma-modal-title { font-size: 18px; font-weight: 800; color: #0f172a; margin-bottom: 24px; letter-spacing: -0.4px; }
   .ma-field { margin-bottom: 16px; }
   .ma-label { display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: #94a3b8; margin-bottom: 7px; }
@@ -60,12 +72,28 @@ const styles = `
   .ma-btn-cancel-modal { background: #f1f5f9; color: #64748b; border: none; flex: 1; }
   .ma-btn-cancel-modal:hover { background: #e2e8f0; }
   .ma-divider { height: 1px; background: #f1f5f9; margin: 24px 0; }
-  @media (max-width: 900px) {
+  @media (max-width: 1100px) {
+    .ma-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 760px) {
     .ma-stats { grid-template-columns: 1fr; }
+    .ma-card { align-items: flex-start; }
+    .ma-actions { width: 100%; }
   }
 `;
 
-const SECTORS = ['Kuaför', 'Restoran', 'Kafe', 'Market', 'Eczane', 'Tekstil', 'Otomotiv', 'Teknoloji', 'Diğer'];
+const SECTORS = ["Kuaför", "Restoran", "Kafe", "Market", "Eczane", "Tekstil", "Otomotiv", "Teknoloji", "Diğer"];
+const PLAN_OPTIONS = ["Starter", "Growth", "Pro", "Kurumsal", "Demo"];
+const STATUS_OPTIONS = ["ACTIVE", "TRIAL", "PAUSED", "CANCELLED"];
+
+type PaymentInfo = {
+  id: number;
+  amount: number;
+  status: string;
+  note: string | null;
+  paidAt: string | null;
+  createdAt: string;
+};
 
 type Business = {
   id: number;
@@ -73,22 +101,109 @@ type Business = {
   sector: string;
   createdAt: string;
   isApproved: boolean;
+  planName: string;
+  monthlyFee: number;
+  subscriptionStatus: string;
+  nextBillingDate: string | null;
+  trialEndsAt: string | null;
+  userCount: number;
+  lastPayment: PaymentInfo | null;
+};
+
+type CreateForm = {
+  name: string;
+  sector: string;
+  adminEmail: string;
+  adminPassword: string;
+  planName: string;
+  monthlyFee: string;
+  subscriptionStatus: string;
+};
+
+type BillingForm = {
+  id: number;
+  name: string;
+  planName: string;
+  monthlyFee: string;
+  subscriptionStatus: string;
+  nextBillingDate: string;
+  trialEndsAt: string;
+};
+
+const formatCurrency = (value = 0) => `${Number(value).toFixed(2)} ₺`;
+
+const formatStatusLabel = (status: string) => {
+  switch (status) {
+    case "ACTIVE":
+      return "Aktif";
+    case "TRIAL":
+      return "Deneme";
+    case "PAUSED":
+      return "Duraklatıldı";
+    case "CANCELLED":
+      return "İptal";
+    case "PENDING_APPROVAL":
+      return "Onay Bekliyor";
+    default:
+      return status;
+  }
+};
+
+const statusClassName = (status: string) => {
+  switch (status) {
+    case "ACTIVE":
+      return "ma-badge-active";
+    case "TRIAL":
+      return "ma-badge-trial";
+    case "PAUSED":
+      return "ma-badge-paused";
+    case "CANCELLED":
+      return "ma-badge-cancelled";
+    default:
+      return "ma-badge-pending";
+  }
+};
+
+const toDateInputValue = (value?: string | null) => {
+  if (!value) {
+    return "";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  return date.toISOString().slice(0, 10);
 };
 
 export default function MainAdminDashboard() {
   const [list, setList] = useState<Business[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({ name: '', sector: 'Teknoloji', adminEmail: '', adminPassword: '' });
-  const [formError, setFormError] = useState('');
-  const [formSuccess, setFormSuccess] = useState('');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [billingModal, setBillingModal] = useState<BillingForm | null>(null);
+  const [formError, setFormError] = useState("");
+  const [formSuccess, setFormSuccess] = useState("");
   const [saveLoading, setSaveLoading] = useState(false);
   const [demoSeedLoading, setDemoSeedLoading] = useState(false);
+  const [paymentLoadingId, setPaymentLoadingId] = useState<number | null>(null);
+  const [createForm, setCreateForm] = useState<CreateForm>({
+    name: "",
+    sector: "Teknoloji",
+    adminEmail: "",
+    adminPassword: "",
+    planName: "Starter",
+    monthlyFee: "1499",
+    subscriptionStatus: "ACTIVE",
+  });
 
   const fetchList = async () => {
     try {
-      const response = await api.get('/businesses');
+      setLoading(true);
+      const response = await api.get("/businesses");
       setList(response.data);
+    } catch (error: any) {
+      setFormError(error?.response?.data?.message || "İşletmeler yüklenemedi.");
     } finally {
       setLoading(false);
     }
@@ -98,68 +213,174 @@ export default function MainAdminDashboard() {
     fetchList();
   }, []);
 
+  const stats = useMemo(() => {
+    const approved = list.filter((business) => business.isApproved);
+    const pending = list.filter((business) => !business.isApproved);
+    const recurringRevenue = approved.reduce((sum, business) => {
+      if (business.subscriptionStatus !== "ACTIVE") {
+        return sum;
+      }
+      return sum + (business.monthlyFee || 0);
+    }, 0);
+    const overdue = approved.filter((business) => {
+      if (business.subscriptionStatus !== "ACTIVE" || (business.monthlyFee || 0) <= 0 || !business.nextBillingDate) {
+        return false;
+      }
+      return new Date(business.nextBillingDate) < new Date();
+    }).length;
+
+    return {
+      approved,
+      pending,
+      recurringRevenue,
+      overdue,
+      active: approved.filter(
+        (business) => business.subscriptionStatus === "ACTIVE" && (business.monthlyFee || 0) > 0
+      ).length,
+    };
+  }, [list]);
+
   const approve = async (id: number) => {
     try {
       await api.put(`/businesses/${id}/approve`);
+      setFormSuccess("İşletme onaylandı.");
+      setFormError("");
       fetchList();
-    } catch {
-      setFormError('İşletme onaylanamadı.');
+    } catch (error: any) {
+      setFormError(error?.response?.data?.message || "İşletme onaylanamadı.");
     }
   };
 
   const deleteBusiness = async (id: number, name: string) => {
-    if (!confirm(`"${name}" işletmesini silmek istediğinize emin misiniz? Tüm veriler silinecek.`)) return;
+    if (!confirm(`"${name}" işletmesini silmek istediğinize emin misiniz? Tüm veriler silinecek.`)) {
+      return;
+    }
 
     try {
       await api.delete(`/businesses/${id}`);
+      setFormSuccess("İşletme silindi.");
+      setFormError("");
       fetchList();
-    } catch {
-      setFormError('Silme işlemi başarısız.');
+    } catch (error: any) {
+      setFormError(error?.response?.data?.message || "Silme işlemi başarısız.");
     }
   };
 
   const refreshDemoData = async () => {
     setDemoSeedLoading(true);
-    setFormError('');
-    setFormSuccess('');
+    setFormError("");
+    setFormSuccess("");
 
     try {
-      const response = await api.post('/businesses/seed-demo');
-      setFormSuccess(response.data?.message || 'Demo verisi yenilendi.');
-    } catch (err: any) {
-      setFormError(err?.response?.data?.message || 'Demo verisi yenilenemedi.');
+      const response = await api.post("/businesses/seed-demo");
+      setFormSuccess(response.data?.message || "Demo verisi yenilendi.");
+      fetchList();
+    } catch (error: any) {
+      setFormError(error?.response?.data?.message || "Demo verisi yenilenemedi.");
     } finally {
       setDemoSeedLoading(false);
     }
   };
 
   const handleCreate = async () => {
-    if (!form.name || !form.adminEmail || !form.adminPassword) {
-      setFormError('İşletme adı, e-posta ve şifre zorunludur.');
+    if (!createForm.name || !createForm.adminEmail || !createForm.adminPassword) {
+      setFormError("İşletme adı, yönetici e-postası ve şifre zorunludur.");
       return;
     }
 
     setSaveLoading(true);
-    setFormError('');
-    setFormSuccess('');
+    setFormError("");
+    setFormSuccess("");
 
     try {
-      await api.post('/businesses/register', {
-        name: form.name,
-        sector: form.sector,
-        adminName: form.name,
-        adminEmail: form.adminEmail,
-        adminPassword: form.adminPassword,
+      await api.post("/businesses", {
+        name: createForm.name,
+        sector: createForm.sector,
+        adminEmail: createForm.adminEmail,
+        adminPassword: createForm.adminPassword,
+        planName: createForm.planName,
+        monthlyFee: Number(createForm.monthlyFee || 0),
+        subscriptionStatus: createForm.subscriptionStatus,
       });
 
-      setFormSuccess('İşletme oluşturuldu.');
-      setForm({ name: '', sector: 'Teknoloji', adminEmail: '', adminPassword: '' });
-      setShowModal(false);
+      setFormSuccess("İşletme oluşturuldu.");
+      setCreateForm({
+        name: "",
+        sector: "Teknoloji",
+        adminEmail: "",
+        adminPassword: "",
+        planName: "Starter",
+        monthlyFee: "1499",
+        subscriptionStatus: "ACTIVE",
+      });
+      setShowCreateModal(false);
       fetchList();
-    } catch (err: any) {
-      setFormError(err?.response?.data?.message || 'İşletme oluşturulamadı.');
+    } catch (error: any) {
+      setFormError(error?.response?.data?.message || "İşletme oluşturulamadı.");
     } finally {
       setSaveLoading(false);
+    }
+  };
+
+  const openBillingModal = (business: Business) => {
+    setFormError("");
+    setBillingModal({
+      id: business.id,
+      name: business.name,
+      planName: business.planName || "Starter",
+      monthlyFee: String(business.monthlyFee ?? 0),
+      subscriptionStatus: business.subscriptionStatus || "TRIAL",
+      nextBillingDate: toDateInputValue(business.nextBillingDate),
+      trialEndsAt: toDateInputValue(business.trialEndsAt),
+    });
+  };
+
+  const saveBilling = async () => {
+    if (!billingModal) {
+      return;
+    }
+
+    setSaveLoading(true);
+    setFormError("");
+    setFormSuccess("");
+
+    try {
+      await api.put(`/businesses/${billingModal.id}/billing`, {
+        planName: billingModal.planName,
+        monthlyFee: Number(billingModal.monthlyFee || 0),
+        subscriptionStatus: billingModal.subscriptionStatus,
+        nextBillingDate: billingModal.nextBillingDate || null,
+        trialEndsAt: billingModal.trialEndsAt || null,
+      });
+
+      setFormSuccess("Paket bilgileri güncellendi.");
+      setBillingModal(null);
+      fetchList();
+    } catch (error: any) {
+      setFormError(error?.response?.data?.message || "Paket bilgileri güncellenemedi.");
+    } finally {
+      setSaveLoading(false);
+    }
+  };
+
+  const recordPayment = async (business: Business) => {
+    if ((business.monthlyFee || 0) <= 0) {
+      setFormError("Tahsilat kaydı için önce aylık paket ücreti tanımlayın.");
+      return;
+    }
+
+    setPaymentLoadingId(business.id);
+    setFormError("");
+    setFormSuccess("");
+
+    try {
+      const response = await api.post(`/businesses/${business.id}/payments`);
+      setFormSuccess(response.data?.message || "Tahsilat kaydedildi.");
+      fetchList();
+    } catch (error: any) {
+      setFormError(error?.response?.data?.message || "Tahsilat kaydedilemedi.");
+    } finally {
+      setPaymentLoadingId(null);
     }
   };
 
@@ -172,30 +393,63 @@ export default function MainAdminDashboard() {
     );
   }
 
-  const approved = list.filter((business) => business.isApproved);
-  const pending = list.filter((business) => !business.isApproved);
-
   const BusinessCard = ({ business }: { business: Business }) => (
     <div className="ma-card">
       <div className="ma-card-left">
         <div className="ma-avatar">{business.name[0]?.toUpperCase()}</div>
         <div>
           <div className="ma-biz-name">{business.name}</div>
-          <div className="ma-biz-sector">{business.sector}</div>
-          <div className="ma-biz-date">{new Date(business.createdAt).toLocaleDateString('tr-TR')}</div>
+          <div className="ma-biz-sector">
+            {business.sector} · {business.userCount || 0} kullanıcı
+          </div>
+          <div className="ma-biz-date">{new Date(business.createdAt).toLocaleDateString("tr-TR")}</div>
+          <div className="ma-meta-row">
+            <span className="ma-chip ma-chip-plan">{business.planName || "Starter"}</span>
+            <span className="ma-chip ma-chip-money">{formatCurrency(business.monthlyFee || 0)} / ay</span>
+            {business.nextBillingDate && (
+              <span className="ma-chip ma-chip-date">
+                Sonraki tahsilat: {new Date(business.nextBillingDate).toLocaleDateString("tr-TR")}
+              </span>
+            )}
+            {business.trialEndsAt && business.subscriptionStatus === "TRIAL" && (
+              <span className="ma-chip ma-chip-date">
+                Deneme bitişi: {new Date(business.trialEndsAt).toLocaleDateString("tr-TR")}
+              </span>
+            )}
+          </div>
+          {business.lastPayment && (
+            <div className="ma-biz-date" style={{ marginTop: 10 }}>
+              Son tahsilat: {formatCurrency(business.lastPayment.amount)} ·{" "}
+              {business.lastPayment.paidAt
+                ? new Date(business.lastPayment.paidAt).toLocaleDateString("tr-TR")
+                : "Tarih yok"}
+            </div>
+          )}
         </div>
       </div>
+
       <div className="ma-actions">
-        {business.isApproved ? (
-          <span className="ma-badge ma-badge-approved">Onaylı</span>
-        ) : (
-          <>
-            <span className="ma-badge ma-badge-pending">Bekliyor</span>
-            <button className="ma-btn ma-btn-approve" onClick={() => approve(business.id)}>
-              Onayla
-            </button>
-          </>
+        <span className={`ma-badge ${business.isApproved ? "ma-badge-approved" : "ma-badge-pending"}`}>
+          {business.isApproved ? "Onaylı" : "Bekliyor"}
+        </span>
+        <span className={`ma-badge ${statusClassName(business.subscriptionStatus)}`}>
+          {formatStatusLabel(business.subscriptionStatus)}
+        </span>
+        {!business.isApproved && (
+          <button className="ma-btn ma-btn-approve" onClick={() => approve(business.id)}>
+            Onayla
+          </button>
         )}
+        <button className="ma-btn ma-btn-secondary" onClick={() => openBillingModal(business)}>
+          Paket Düzenle
+        </button>
+        <button
+          className="ma-btn ma-btn-secondary"
+          onClick={() => recordPayment(business)}
+          disabled={paymentLoadingId === business.id}
+        >
+          {paymentLoadingId === business.id ? "Kaydediliyor..." : "Tahsilat Gir"}
+        </button>
         <button className="ma-btn ma-btn-delete" onClick={() => deleteBusiness(business.id, business.name)}>
           Sil
         </button>
@@ -210,13 +464,19 @@ export default function MainAdminDashboard() {
         <div className="ma-header">
           <div>
             <div className="ma-title">İşletmeler</div>
-            <div className="ma-subtitle">Sisteme kayıtlı tüm işletmeleri yönetin</div>
+            <div className="ma-subtitle">Sistemdeki işletmeleri, paketleri ve tahsilat akışını yönetin</div>
           </div>
           <div className="ma-header-actions">
             <button className="ma-btn ma-btn-secondary" onClick={refreshDemoData} disabled={demoSeedLoading}>
-              {demoSeedLoading ? 'Demo verisi yenileniyor...' : 'Demo verisini yenile'}
+              {demoSeedLoading ? "Demo verisi yenileniyor..." : "Demo verisini yenile"}
             </button>
-            <button className="ma-btn ma-btn-primary" onClick={() => { setShowModal(true); setFormError(''); }}>
+            <button
+              className="ma-btn ma-btn-primary"
+              onClick={() => {
+                setShowCreateModal(true);
+                setFormError("");
+              }}
+            >
               + Yeni İşletme
             </button>
           </div>
@@ -229,22 +489,32 @@ export default function MainAdminDashboard() {
           <div className="ma-stat s1">
             <div className="ma-stat-label">Toplam İşletme</div>
             <div className="ma-stat-value purple">{list.length}</div>
+            <div className="ma-stat-sub">Sistemde kayıtlı tüm işletmeler</div>
           </div>
           <div className="ma-stat s2">
-            <div className="ma-stat-label">Onaylı</div>
-            <div className="ma-stat-value green">{approved.length}</div>
+            <div className="ma-stat-label">Aktif Paket</div>
+            <div className="ma-stat-value green">{stats.active}</div>
+            <div className="ma-stat-sub">Tahsilat takibi yapılan işletmeler</div>
           </div>
           <div className="ma-stat s3">
-            <div className="ma-stat-label">Onay Bekliyor</div>
-            <div className="ma-stat-value orange">{pending.length}</div>
+            <div className="ma-stat-label">Aylık Paket Geliri</div>
+            <div className="ma-stat-value orange">{formatCurrency(stats.recurringRevenue)}</div>
+            <div className="ma-stat-sub">Aktif paket ücretleri toplamı</div>
+          </div>
+          <div className="ma-stat s4">
+            <div className="ma-stat-label">Geciken Tahsilat</div>
+            <div className="ma-stat-value pink">{stats.overdue}</div>
+            <div className="ma-stat-sub">
+              Onaylı: {stats.approved.length} · Bekleyen: {stats.pending.length}
+            </div>
           </div>
         </div>
 
-        {pending.length > 0 && (
+        {stats.pending.length > 0 && (
           <>
             <div className="ma-section-title">Onay Bekleyen İşletmeler</div>
             <div className="ma-list" style={{ marginBottom: 28 }}>
-              {pending.map((business) => (
+              {stats.pending.map((business) => (
                 <BusinessCard key={business.id} business={business} />
               ))}
             </div>
@@ -254,15 +524,15 @@ export default function MainAdminDashboard() {
 
         <div className="ma-section-title">Onaylı İşletmeler</div>
         <div className="ma-list">
-          {approved.length === 0 ? (
-            <div className="ma-empty">Henüz onaylı işletme yok</div>
+          {stats.approved.length === 0 ? (
+            <div className="ma-empty">Henüz onaylı işletme yok.</div>
           ) : (
-            approved.map((business) => <BusinessCard key={business.id} business={business} />)
+            stats.approved.map((business) => <BusinessCard key={business.id} business={business} />)
           )}
         </div>
 
-        {showModal && (
-          <div className="ma-modal-overlay" onClick={() => setShowModal(false)}>
+        {showCreateModal && (
+          <div className="ma-modal-overlay" onClick={() => setShowCreateModal(false)}>
             <div className="ma-modal" onClick={(event) => event.stopPropagation()}>
               <div className="ma-modal-title">Yeni İşletme Ekle</div>
               {formError && <div className="ma-error">{formError}</div>}
@@ -272,8 +542,8 @@ export default function MainAdminDashboard() {
                 <input
                   className="ma-input"
                   placeholder="İşletme adı"
-                  value={form.name}
-                  onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
+                  value={createForm.name}
+                  onChange={(event) => setCreateForm((current) => ({ ...current, name: event.target.value }))}
                 />
               </div>
 
@@ -281,8 +551,8 @@ export default function MainAdminDashboard() {
                 <label className="ma-label">Sektör</label>
                 <select
                   className="ma-select"
-                  value={form.sector}
-                  onChange={(event) => setForm((current) => ({ ...current, sector: event.target.value }))}
+                  value={createForm.sector}
+                  onChange={(event) => setCreateForm((current) => ({ ...current, sector: event.target.value }))}
                 >
                   {SECTORS.map((sector) => (
                     <option key={sector}>{sector}</option>
@@ -296,8 +566,8 @@ export default function MainAdminDashboard() {
                   className="ma-input"
                   type="email"
                   placeholder="yonetici@isletme.com"
-                  value={form.adminEmail}
-                  onChange={(event) => setForm((current) => ({ ...current, adminEmail: event.target.value }))}
+                  value={createForm.adminEmail}
+                  onChange={(event) => setCreateForm((current) => ({ ...current, adminEmail: event.target.value }))}
                 />
               </div>
 
@@ -307,17 +577,154 @@ export default function MainAdminDashboard() {
                   className="ma-input"
                   type="password"
                   placeholder="••••••••"
-                  value={form.adminPassword}
-                  onChange={(event) => setForm((current) => ({ ...current, adminPassword: event.target.value }))}
+                  value={createForm.adminPassword}
+                  onChange={(event) => setCreateForm((current) => ({ ...current, adminPassword: event.target.value }))}
+                />
+              </div>
+
+              <div className="ma-divider" />
+
+              <div className="ma-field">
+                <label className="ma-label">Paket</label>
+                <select
+                  className="ma-select"
+                  value={createForm.planName}
+                  onChange={(event) => setCreateForm((current) => ({ ...current, planName: event.target.value }))}
+                >
+                  {PLAN_OPTIONS.map((plan) => (
+                    <option key={plan}>{plan}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="ma-field">
+                <label className="ma-label">Aylık Ücret</label>
+                <input
+                  className="ma-input"
+                  type="number"
+                  min="0"
+                  placeholder="1499"
+                  value={createForm.monthlyFee}
+                  onChange={(event) => setCreateForm((current) => ({ ...current, monthlyFee: event.target.value }))}
+                />
+              </div>
+
+              <div className="ma-field">
+                <label className="ma-label">Abonelik Durumu</label>
+                <select
+                  className="ma-select"
+                  value={createForm.subscriptionStatus}
+                  onChange={(event) =>
+                    setCreateForm((current) => ({ ...current, subscriptionStatus: event.target.value }))
+                  }
+                >
+                  {STATUS_OPTIONS.map((status) => (
+                    <option key={status} value={status}>
+                      {formatStatusLabel(status)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="ma-modal-actions">
+                <button className="ma-btn ma-btn-cancel-modal" onClick={() => setShowCreateModal(false)}>
+                  İptal
+                </button>
+                <button className="ma-btn ma-btn-primary" style={{ flex: 2 }} onClick={handleCreate} disabled={saveLoading}>
+                  {saveLoading ? "Oluşturuluyor..." : "İşletme Oluştur"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {billingModal && (
+          <div className="ma-modal-overlay" onClick={() => setBillingModal(null)}>
+            <div className="ma-modal" onClick={(event) => event.stopPropagation()}>
+              <div className="ma-modal-title">{billingModal.name} · Paket Düzenle</div>
+              {formError && <div className="ma-error">{formError}</div>}
+
+              <div className="ma-field">
+                <label className="ma-label">Paket</label>
+                <select
+                  className="ma-select"
+                  value={billingModal.planName}
+                  onChange={(event) =>
+                    setBillingModal((current) => (current ? { ...current, planName: event.target.value } : current))
+                  }
+                >
+                  {PLAN_OPTIONS.map((plan) => (
+                    <option key={plan}>{plan}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="ma-field">
+                <label className="ma-label">Aylık Ücret</label>
+                <input
+                  className="ma-input"
+                  type="number"
+                  min="0"
+                  value={billingModal.monthlyFee}
+                  onChange={(event) =>
+                    setBillingModal((current) => (current ? { ...current, monthlyFee: event.target.value } : current))
+                  }
+                />
+              </div>
+
+              <div className="ma-field">
+                <label className="ma-label">Abonelik Durumu</label>
+                <select
+                  className="ma-select"
+                  value={billingModal.subscriptionStatus}
+                  onChange={(event) =>
+                    setBillingModal((current) =>
+                      current ? { ...current, subscriptionStatus: event.target.value } : current
+                    )
+                  }
+                >
+                  {STATUS_OPTIONS.map((status) => (
+                    <option key={status} value={status}>
+                      {formatStatusLabel(status)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="ma-field">
+                <label className="ma-label">Sonraki Tahsilat Tarihi</label>
+                <input
+                  className="ma-input"
+                  type="date"
+                  value={billingModal.nextBillingDate}
+                  onChange={(event) =>
+                    setBillingModal((current) =>
+                      current ? { ...current, nextBillingDate: event.target.value } : current
+                    )
+                  }
+                />
+              </div>
+
+              <div className="ma-field">
+                <label className="ma-label">Deneme Bitişi</label>
+                <input
+                  className="ma-input"
+                  type="date"
+                  value={billingModal.trialEndsAt}
+                  onChange={(event) =>
+                    setBillingModal((current) =>
+                      current ? { ...current, trialEndsAt: event.target.value } : current
+                    )
+                  }
                 />
               </div>
 
               <div className="ma-modal-actions">
-                <button className="ma-btn ma-btn-cancel-modal" onClick={() => setShowModal(false)}>
+                <button className="ma-btn ma-btn-cancel-modal" onClick={() => setBillingModal(null)}>
                   İptal
                 </button>
-                <button className="ma-btn ma-btn-primary" style={{ flex: 2 }} onClick={handleCreate} disabled={saveLoading}>
-                  {saveLoading ? 'Oluşturuluyor...' : 'İşletme Oluştur'}
+                <button className="ma-btn ma-btn-primary" style={{ flex: 2 }} onClick={saveBilling} disabled={saveLoading}>
+                  {saveLoading ? "Kaydediliyor..." : "Paket Bilgilerini Kaydet"}
                 </button>
               </div>
             </div>

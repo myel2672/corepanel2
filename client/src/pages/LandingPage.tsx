@@ -4,12 +4,12 @@ export default function LandingPage() {
   const navigate = useNavigate();
 
   return (
-    <>
+    <div style={{ background: '#0a0a0f', minHeight: '100vh' }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
         html, body { background: #0a0a0f !important; }
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        
+
         :root {
           --indigo: #6366f1;
           --indigo-dark: #4338ca;
@@ -17,30 +17,27 @@ export default function LandingPage() {
           --cyan: #06b6d4;
           --dark: #0a0a0f;
           --dark2: #12121a;
-          --dark3: #1a1a26;
           --border: rgba(255,255,255,0.07);
-          --text: #e2e8f0; /* açık gri */
-          --muted: #94a3b8; /* biraz daha açık gri */
+          --text: #e2e8f0;
+          --muted: #64748b;
         }
 
         html { scroll-behavior: smooth; }
-        body { font-family: 'DM Sans', sans-serif; background: var(--dark); color: var(--text); overflow-x: hidden; }
+        body { font-family: 'DM Sans', sans-serif; background: #0a0a0f; color: var(--text); overflow-x: hidden; }
 
-        /* ── NAVBAR ── */
+        /* NAVBAR */
         .nav {
           position: fixed; top: 0; left: 0; right: 0; z-index: 100;
           display: flex; align-items: center; justify-content: space-between;
           padding: 18px 60px;
-          background: rgba(10,10,15,0.8);
+          background: rgba(10,10,15,0.85);
           backdrop-filter: blur(20px);
           border-bottom: 1px solid var(--border);
         }
         .nav-logo {
-          font-family: 'Syne', sans-serif;
-          font-size: 22px; font-weight: 800;
+          font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800;
           background: linear-gradient(135deg, #fff 0%, var(--indigo-light) 100%);
-          -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-          background-clip: text;
+          -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
           letter-spacing: -0.5px;
         }
         .nav-logo span {
@@ -49,274 +46,162 @@ export default function LandingPage() {
           margin-left: 2px; vertical-align: middle; margin-bottom: 4px;
         }
         .nav-links { display: flex; align-items: center; gap: 32px; }
-        .nav-link {
-          font-size: 14px; font-weight: 500; color: var(--muted);
-          text-decoration: none; transition: color 0.2s;
-        }
+        .nav-link { font-size: 14px; font-weight: 500; color: var(--muted); text-decoration: none; transition: color 0.2s; }
         .nav-link:hover { color: #fff; }
         .nav-cta {
-          padding: 9px 22px;
-          background: var(--indigo);
-          border: none; border-radius: 10px;
-          color: #fff; font-size: 14px; font-weight: 600;
-          font-family: 'DM Sans', sans-serif;
+          padding: 9px 22px; background: var(--indigo); border: none; border-radius: 10px;
+          color: #fff; font-size: 14px; font-weight: 600; font-family: 'DM Sans', sans-serif;
+          cursor: pointer; transition: all 0.2s; box-shadow: 0 0 20px rgba(99,102,241,0.3);
+        }
+        .nav-cta:hover { background: var(--indigo-dark); transform: translateY(-1px); }
+
+        /* HERO */
+        .hero {
+          min-height: 100vh; display: flex; flex-direction: column;
+          align-items: center; justify-content: center; text-align: center;
+          padding: 120px 24px 80px; position: relative; overflow: hidden;
+          background: #0a0a0f;
+        }
+        .hero-bg {
+          position: absolute; inset: 0; z-index: 0;
+          background:
+            radial-gradient(ellipse 80% 50% at 50% -10%, rgba(99,102,241,0.25) 0%, transparent 70%),
+            radial-gradient(ellipse 40% 30% at 80% 80%, rgba(6,182,212,0.1) 0%, transparent 60%);
+        }
+        .hero-grid {
+          position: absolute; inset: 0; z-index: 0;
+          background-image:
+            linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+          background-size: 60px 60px;
+          mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 0%, transparent 100%);
+        }
+        .hero-badge {
+          display: inline-flex; align-items: center; gap: 8px;
+          padding: 6px 16px; background: rgba(99,102,241,0.1);
+          border: 1px solid rgba(99,102,241,0.3); border-radius: 100px;
+          font-size: 12px; font-weight: 600; color: var(--indigo-light);
+          letter-spacing: 0.5px; margin-bottom: 28px;
+          position: relative; z-index: 1;
+          animation: fadeUp 0.6s ease both;
+        }
+        .hero-badge-dot { width: 6px; height: 6px; background: var(--cyan); border-radius: 50%; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+        .hero-title {
+          font-family: 'Syne', sans-serif;
+          font-size: clamp(42px, 7vw, 80px); font-weight: 800; line-height: 1.05;
+          letter-spacing: -2px; color: #fff; margin-bottom: 24px;
+          position: relative; z-index: 1;
+          animation: fadeUp 0.6s 0.1s ease both;
+        }
+        .hero-title em {
+          font-style: normal;
+          background: linear-gradient(135deg, var(--indigo-light), var(--cyan));
+          -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .hero-desc {
+          font-size: 18px; font-weight: 400; color: #94a3b8;
+          max-width: 560px; line-height: 1.7; margin-bottom: 44px;
+          position: relative; z-index: 1;
+          animation: fadeUp 0.6s 0.2s ease both;
+        }
+        .hero-btns {
+          display: flex; gap: 14px; justify-content: center;
+          position: relative; z-index: 1;
+          animation: fadeUp 0.6s 0.3s ease both;
+        }
+        .btn-primary {
+          padding: 14px 32px; background: var(--indigo); border: none; border-radius: 12px;
+          color: #fff; font-size: 15px; font-weight: 600; font-family: 'DM Sans', sans-serif;
+          cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 24px rgba(99,102,241,0.4);
+        }
+        .btn-primary:hover { background: var(--indigo-dark); transform: translateY(-2px); box-shadow: 0 8px 32px rgba(99,102,241,0.5); }
+        .btn-secondary {
+          padding: 14px 32px; background: rgba(255,255,255,0.06);
+          border: 1px solid rgba(255,255,255,0.25); border-radius: 12px;
+          color: #e2e8f0; font-size: 15px; font-weight: 600; font-family: 'DM Sans', sans-serif;
           cursor: pointer; transition: all 0.2s;
-          box-shadow: 0 0 20px rgba(99,102,241,0.3);
         }
-        .nav-cta:hover { background: var(--indigo-dark); transform: translateY(-1px); box-shadow: 0 4px 24px rgba(99,102,241,0.5); }
-
-        /* ── HERO ── */
-.hero {
-  min-height: 100vh;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  text-align: center;
-  padding: 120px 24px 80px;
-  position: relative; overflow: hidden;
-}
-
-.hero-bg {
-  position: absolute; inset: 0; z-index: 0;
-  background:
-    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(99,102,241,0.25) 0%, transparent 70%),
-    radial-gradient(ellipse 40% 30% at 80% 80%, rgba(6,182,212,0.1) 0%, transparent 60%);
-}
-
-.hero-grid {
-  position: absolute; inset: 0; z-index: 0;
-  background-image:
-    linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px);
-  background-size: 60px 60px;
-  mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 0%, transparent 100%);
-}
-
-.hero-badge {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 6px 16px;
-  background: rgba(99,102,241,0.1);
-  border: 1px solid rgba(99,102,241,0.3);
-  border-radius: 100px;
-  font-size: 12px; font-weight: 600; color: var(--indigo-dark);
-  letter-spacing: 0.5px;
-  margin-bottom: 28px;
-  position: relative; z-index: 1;
-  animation: fadeUp 0.6s ease both;
-}
-
-.hero-title {
-  font-family: 'Syne', sans-serif;
-  font-size: clamp(42px, 7vw, 80px);
-  font-weight: 800; line-height: 1.05;
-  letter-spacing: -2px;
-  color: #111; /* koyu siyah-gri, beyaz arka planda net */
-  margin-bottom: 24px;
-  position: relative; z-index: 1;
-  animation: fadeUp 0.6s 0.1s ease both;
-}
-
-.hero-title em {
-  font-style: normal;
-  background: linear-gradient(135deg, var(--indigo-light), var(--cyan));
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.hero-desc {
-  font-size: 18px; font-weight: 400; color: #333; /* koyulaştırıldı */
-  max-width: 560px; line-height: 1.7;
-  margin-bottom: 44px;
-  position: relative; z-index: 1;
-  animation: fadeUp 0.6s 0.2s ease both;
-}
-
-.hero-btns {
-  display: flex; gap: 14px; justify-content: center;
-  position: relative; z-index: 1;
-  animation: fadeUp 0.6s 0.3s ease both;
-}
-
-.btn-primary {
-  padding: 14px 32px;
-  background: var(--indigo);
-  border: none; border-radius: 12px;
-  color: #fff; font-size: 15px; font-weight: 600;
-  font-family: 'DM Sans', sans-serif;
-  cursor: pointer; transition: all 0.2s;
-  box-shadow: 0 4px 24px rgba(99,102,241,0.4);
-}
-
-.btn-primary:hover {
-  background: var(--indigo-dark);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 32px rgba(99,102,241,0.5);
-}
-
-.btn-secondary {
-  padding: 14px 32px;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.2);
-  border-radius: 12px;
-  color: #e2e8f0; font-size: 15px; font-weight: 600;
-  font-family: 'DM Sans', sans-serif;
-  cursor: pointer; transition: all 0.2s;
-}
-.btn-secondary:hover { border-color: rgba(255,255,255,0.4); color: #fff; background: rgba(255,255,255,0.1); }
-
-.btn-secondary:hover {
-  border-color: rgba(0,0,0,0.2);
-  color: #000;
-  background: rgba(0,0,0,0.04);
-}
-
-.hero-stat-val {
-  font-family: 'Syne', sans-serif;
-  font-size: 32px; font-weight: 800; color: #111; /* koyulaştırıldı */
-  letter-spacing: -1px;
-}
-
-.hero-stat-val span { color: var(--indigo-dark); }
-
-.hero-stat-lbl {
-  font-size: 13px; color: #444; /* muted yerine daha koyu */
-  margin-top: 4px; font-weight: 500;
-}
-        /* ── FEATURES ── */
-        .features-grid {
-          display: grid; grid-template-columns: repeat(3, 1fr);
-          gap: 20px; margin-top: 56px;
+        .btn-secondary:hover { border-color: rgba(255,255,255,0.4); color: #fff; background: rgba(255,255,255,0.1); }
+        .hero-stats {
+          display: flex; gap: 48px; justify-content: center; margin-top: 72px;
+          position: relative; z-index: 1;
+          animation: fadeUp 0.6s 0.4s ease both;
         }
+        .hero-stat-val { font-family: 'Syne', sans-serif; font-size: 32px; font-weight: 800; color: #fff; letter-spacing: -1px; }
+        .hero-stat-val span { color: var(--indigo-light); }
+        .hero-stat-lbl { font-size: 13px; color: var(--muted); margin-top: 4px; font-weight: 500; }
+
+        @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* SECTION */
+        .section { padding: 100px 24px; background: #0a0a0f; }
+        .section-inner { max-width: 1100px; margin: 0 auto; }
+        .section-tag { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--indigo-light); margin-bottom: 16px; }
+        .section-title { font-family: 'Syne', sans-serif; font-size: clamp(28px, 4vw, 44px); font-weight: 800; color: #fff; letter-spacing: -1px; line-height: 1.1; margin-bottom: 16px; }
+        .section-desc { font-size: 16px; color: #64748b; line-height: 1.7; max-width: 560px; }
+
+        /* FEATURES */
+        .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 56px; }
         .feature-card {
-          background: var(--dark2);
-          border: 1px solid var(--border);
-          border-radius: 20px; padding: 32px;
-          transition: all 0.3s;
-          position: relative; overflow: hidden;
+          background: var(--dark2); border: 1px solid var(--border);
+          border-radius: 20px; padding: 32px; transition: all 0.3s; position: relative; overflow: hidden;
         }
         .feature-card::before {
-          content: ''; position: absolute;
-          top: 0; left: 0; right: 0; height: 1px;
+          content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
           background: linear-gradient(90deg, transparent, rgba(99,102,241,0.5), transparent);
           opacity: 0; transition: opacity 0.3s;
         }
         .feature-card:hover { border-color: rgba(99,102,241,0.3); transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
         .feature-card:hover::before { opacity: 1; }
-        .feature-icon {
-          width: 48px; height: 48px;
-          background: rgba(99,102,241,0.1);
-          border: 1px solid rgba(99,102,241,0.2);
-          border-radius: 12px;
-          display: flex; align-items: center; justify-content: center;
-          font-size: 22px; margin-bottom: 20px;
-        }
+        .feature-icon { width: 48px; height: 48px; background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 20px; }
         .feature-title { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 700; color: #fff; margin-bottom: 10px; }
         .feature-desc { font-size: 14px; color: #64748b; line-height: 1.65; }
 
-        /* ── HOW IT WORKS ── */
-        .how-section { background: var(--dark2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+        /* HOW */
+        .how-section { background: var(--dark2) !important; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
         .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin-top: 56px; position: relative; }
-        .steps::before {
-          content: ''; position: absolute;
-          top: 28px; left: 12.5%; right: 12.5%; height: 1px;
-          background: linear-gradient(90deg, transparent, var(--indigo), var(--cyan), var(--indigo), transparent);
-          opacity: 0.3;
-        }
+        .steps::before { content: ''; position: absolute; top: 28px; left: 12.5%; right: 12.5%; height: 1px; background: linear-gradient(90deg, transparent, var(--indigo), var(--cyan), var(--indigo), transparent); opacity: 0.3; }
         .step { text-align: center; padding: 0 20px; }
-        .step-num {
-          width: 56px; height: 56px;
-          background: linear-gradient(135deg, var(--indigo), var(--indigo-dark));
-          border-radius: 50%;
-          display: flex; align-items: center; justify-content: center;
-          font-family: 'Syne', sans-serif;
-          font-size: 18px; font-weight: 800; color: #fff;
-          margin: 0 auto 20px;
-          box-shadow: 0 0 24px rgba(99,102,241,0.4);
-          position: relative; z-index: 1;
-        }
+        .step-num { width: 56px; height: 56px; background: linear-gradient(135deg, var(--indigo), var(--indigo-dark)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; color: #fff; margin: 0 auto 20px; box-shadow: 0 0 24px rgba(99,102,241,0.4); position: relative; z-index: 1; }
         .step-title { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 10px; }
         .step-desc { font-size: 13px; color: #64748b; line-height: 1.6; }
 
-        /* ── PRICING ── */
+        /* PRICING */
         .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 56px; }
-        .pricing-card {
-          background: var(--dark2); border: 1px solid var(--border);
-          border-radius: 24px; padding: 36px;
-          position: relative; transition: all 0.3s;
-        }
+        .pricing-card { background: var(--dark2); border: 1px solid var(--border); border-radius: 24px; padding: 36px; position: relative; transition: all 0.3s; }
         .pricing-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
-        .pricing-card.featured {
-          background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(6,182,212,0.05));
-          border-color: rgba(99,102,241,0.4);
-          box-shadow: 0 0 40px rgba(99,102,241,0.15);
-        }
-        .pricing-badge {
-          display: inline-block; padding: 4px 12px;
-          background: var(--indigo); border-radius: 100px;
-          font-size: 11px; font-weight: 700; color: #fff;
-          margin-bottom: 20px; letter-spacing: 0.5px;
-        }
+        .pricing-card.featured { background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(6,182,212,0.05)); border-color: rgba(99,102,241,0.4); box-shadow: 0 0 40px rgba(99,102,241,0.15); }
+        .pricing-badge { display: inline-block; padding: 4px 12px; background: var(--indigo); border-radius: 100px; font-size: 11px; font-weight: 700; color: #fff; margin-bottom: 20px; }
         .pricing-name { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 8px; }
-        .pricing-price {
-          font-family: 'Syne', sans-serif;
-          font-size: 44px; font-weight: 800; color: #fff;
-          letter-spacing: -2px; margin-bottom: 4px;
-        }
+        .pricing-price { font-family: 'Syne', sans-serif; font-size: 44px; font-weight: 800; color: #fff; letter-spacing: -2px; margin-bottom: 4px; }
         .pricing-price span { font-size: 18px; font-weight: 500; color: var(--muted); letter-spacing: 0; }
         .pricing-desc { font-size: 13px; color: var(--muted); margin-bottom: 28px; }
         .pricing-divider { height: 1px; background: var(--border); margin-bottom: 24px; }
         .pricing-features { list-style: none; display: flex; flex-direction: column; gap: 12px; margin-bottom: 32px; }
         .pricing-feature { display: flex; align-items: center; gap: 10px; font-size: 14px; color: #94a3b8; }
         .pricing-check { color: var(--cyan); font-size: 16px; }
-        .pricing-btn {
-          width: 100%; padding: 13px;
-          border-radius: 12px; border: none;
-          font-size: 15px; font-weight: 600;
-          font-family: 'DM Sans', sans-serif;
-          cursor: pointer; transition: all 0.2s;
-        }
-        .pricing-btn-outline {
-          background: transparent;
-          border: 1px solid var(--border) !important;
-          color: #94a3b8;
-        }
+        .pricing-btn { width: 100%; padding: 13px; border-radius: 12px; border: none; font-size: 15px; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.2s; }
+        .pricing-btn-outline { background: transparent; border: 1px solid var(--border) !important; color: #94a3b8; }
         .pricing-btn-outline:hover { border-color: rgba(255,255,255,0.2) !important; color: #fff; background: rgba(255,255,255,0.04); }
-        .pricing-btn-filled {
-          background: var(--indigo); color: #fff;
-          box-shadow: 0 4px 20px rgba(99,102,241,0.4);
-        }
-        .pricing-btn-filled:hover { background: var(--indigo-dark); box-shadow: 0 8px 28px rgba(99,102,241,0.5); transform: translateY(-1px); }
+        .pricing-btn-filled { background: var(--indigo); color: #fff; box-shadow: 0 4px 20px rgba(99,102,241,0.4); }
+        .pricing-btn-filled:hover { background: var(--indigo-dark); transform: translateY(-1px); }
 
-        /* ── CTA ── */
-        .cta-section {
-          padding: 100px 24px;
-          text-align: center;
-          position: relative; overflow: hidden;
-        }
-        .cta-bg {
-          position: absolute; inset: 0; z-index: 0;
-          background: radial-gradient(ellipse 60% 60% at 50% 50%, rgba(99,102,241,0.15) 0%, transparent 70%);
-        }
-        .cta-title {
-          font-family: 'Syne', sans-serif;
-          font-size: clamp(32px, 5vw, 56px);
-          font-weight: 800; color: #fff;
-          letter-spacing: -1.5px; line-height: 1.1;
-          margin-bottom: 20px;
-          position: relative; z-index: 1;
-        }
+        /* CTA */
+        .cta-section { padding: 100px 24px; text-align: center; position: relative; overflow: hidden; background: #0a0a0f; }
+        .cta-bg { position: absolute; inset: 0; z-index: 0; background: radial-gradient(ellipse 60% 60% at 50% 50%, rgba(99,102,241,0.15) 0%, transparent 70%); }
+        .cta-title { font-family: 'Syne', sans-serif; font-size: clamp(32px, 5vw, 56px); font-weight: 800; color: #fff; letter-spacing: -1.5px; line-height: 1.1; margin-bottom: 20px; position: relative; z-index: 1; }
         .cta-desc { font-size: 17px; color: #64748b; margin-bottom: 40px; position: relative; z-index: 1; }
         .cta-btns { display: flex; gap: 14px; justify-content: center; position: relative; z-index: 1; }
 
-        /* ── FOOTER ── */
-        .footer {
-          border-top: 1px solid var(--border);
-          padding: 32px 60px;
-          display: flex; align-items: center; justify-content: space-between;
-        }
+        /* FOOTER */
+        .footer { border-top: 1px solid var(--border); padding: 32px 60px; display: flex; align-items: center; justify-content: space-between; background: #0a0a0f; }
         .footer-logo { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; color: #475569; }
         .footer-copy { font-size: 13px; color: #334155; }
 
-        /* ── MOBİL ── */
         @media (max-width: 768px) {
           .nav { padding: 16px 20px; }
           .nav-links { display: none; }
@@ -429,10 +314,9 @@ export default function LandingPage() {
           <h2 className="section-title">Şeffaf fiyatlar,<br />sürpriz yok.</h2>
           <p className="section-desc">İşletmenizin büyüklüğüne göre size uygun planı seçin.</p>
           <div className="pricing-grid">
-            {/* Başlangıç */}
             <div className="pricing-card">
               <div className="pricing-name">Başlangıç</div>
-              <div className="pricing-price">Ücretsiz<span></span></div>
+              <div className="pricing-price">Ücretsiz</div>
               <div className="pricing-desc">Küçük işletmeler için</div>
               <div className="pricing-divider" />
               <ul className="pricing-features">
@@ -442,8 +326,6 @@ export default function LandingPage() {
               </ul>
               <button className="pricing-btn pricing-btn-outline" onClick={() => navigate('/register')}>Ücretsiz Başla</button>
             </div>
-
-            {/* Pro */}
             <div className="pricing-card featured">
               <div className="pricing-badge">⭐ En Popüler</div>
               <div className="pricing-name">Pro</div>
@@ -457,11 +339,9 @@ export default function LandingPage() {
               </ul>
               <button className="pricing-btn pricing-btn-filled" onClick={() => navigate('/register')}>Hemen Başla →</button>
             </div>
-
-            {/* Kurumsal */}
             <div className="pricing-card">
               <div className="pricing-name">Kurumsal</div>
-              <div className="pricing-price">Özel<span></span></div>
+              <div className="pricing-price">Özel</div>
               <div className="pricing-desc">Büyük işletmeler için</div>
               <div className="pricing-divider" />
               <ul className="pricing-features">
@@ -491,6 +371,6 @@ export default function LandingPage() {
         <div className="footer-logo">Corepanel</div>
         <div className="footer-copy">© 2026 Corepanel · Tüm hakları saklıdır</div>
       </footer>
-    </>
+    </div>
   );
 }

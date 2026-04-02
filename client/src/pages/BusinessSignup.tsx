@@ -67,7 +67,8 @@ const styles = `
     transition: all 0.15s;
     margin-bottom: 16px;
   }
-  .bs-select { appearance: none; cursor: pointer; }
+  .bs-select { appearance: none; cursor: pointer; background-color: #1e2130; }
+  .bs-select option { background-color: #1e2130 !important; color: #f1f5f9 !important; }
   .bs-input:focus, .bs-select:focus { border-color: rgba(99,102,241,0.5); background: rgba(99,102,241,0.07); }
   .bs-input::placeholder { color: rgba(255,255,255,0.18); }
   .bs-btn {
@@ -92,7 +93,6 @@ const styles = `
 
 export default function BusinessSignup() {
   const navigate = useNavigate();
-  // Token kontrolü: giriş yapmış kullanıcı → /dashboard, değilse → /login
   const token = useAuthStore((s) => s.token);
 
   const handleBack = () => {
@@ -141,7 +141,6 @@ export default function BusinessSignup() {
         <div className="bs-orb bs-orb1" />
         <div className="bs-orb bs-orb2" />
         <div className="bs-card">
-          {/* ← Düzeltme: <a href> yerine useNavigate + token kontrolü */}
           <button className="bs-back" onClick={handleBack}>
             &#8592; {token ? 'Panele dön' : 'Giriş sayfasına dön'}
           </button>
@@ -179,7 +178,7 @@ export default function BusinessSignup() {
                 value={form.sector}
                 onChange={(e) => setField('sector', e.target.value)}
               >
-                {SECTORS.map((s) => <option key={s}>{s}</option>)}
+                {SECTORS.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
 
               <div className="bs-section">Yönetici Bilgileri</div>

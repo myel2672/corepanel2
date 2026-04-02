@@ -1,11 +1,13 @@
 import { Router } from "express"
 import { PrismaClient } from "@prisma/client"
-import { authenticate, requireAdmin, requireNotDemo, AuthRequest } from "../middleware/auth"
+import { authenticate, requireAdmin, requireBusinessUser, requireNotDemo, AuthRequest } from "../middleware/auth"
 
 const router = Router()
 const prisma = new PrismaClient()
+router.use(authenticate)
+router.use(requireBusinessUser)
 
-router.get("/", authenticate, async (req: AuthRequest, res) => {
+router.get("/", async (req: AuthRequest, res) => {
   try {
     const user = req.user as any
     const where: any = {}
@@ -21,7 +23,7 @@ router.get("/", authenticate, async (req: AuthRequest, res) => {
   }
 })
 
-router.post("/", authenticate, requireNotDemo, async (req: AuthRequest, res) => {
+router.post("/", requireNotDemo, async (req: AuthRequest, res) => {
   try {
     const user = req.user as any
     const { productId, quantity, customerId } = req.body
@@ -56,7 +58,7 @@ router.post("/", authenticate, requireNotDemo, async (req: AuthRequest, res) => 
   }
 })
 
-router.put("/:id/status", authenticate, requireNotDemo, async (req: AuthRequest, res) => {
+router.put("/:id/status", requireNotDemo, async (req: AuthRequest, res) => {
   try {
     const user = req.user as any
     const { status } = req.body
@@ -75,7 +77,7 @@ router.put("/:id/status", authenticate, requireNotDemo, async (req: AuthRequest,
   }
 })
 
-router.delete("/:id", authenticate, requireNotDemo, async (req: AuthRequest, res) => {
+router.delete("/:id", requireNotDemo, async (req: AuthRequest, res) => {
   try {
     const user = req.user as any
     const order = await prisma.order.findUnique({ where: { id: Number(req.params.id) } })

@@ -32,3 +32,10 @@ export const requireNotDemo = (req: AuthRequest, res: Response, next: NextFuncti
   }
   next();
 };
+
+export const requireBusinessUser = (req: AuthRequest, res: Response, next: NextFunction) => {
+  if (req.user?.role === "MAIN_ADMIN") {
+    return res.status(403).json({ message: "Bu alan sadece isletme hesaplari icindir" });
+  }
+  next();
+};

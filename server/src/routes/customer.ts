@@ -1,9 +1,11 @@
 ﻿import { Router, Response } from "express";
 import { PrismaClient } from "@prisma/client";
-import { authenticate, AuthRequest } from "../middleware/auth";
+import { authenticate, requireBusinessUser, AuthRequest } from "../middleware/auth";
 
 const router = Router();
 const prisma = new PrismaClient();
+router.use(authenticate);
+router.use(requireBusinessUser);
 
 const staffGuard = (req: any, res: any, next: any) => {
   if (req.user.role === "STAFF" || req.user.role === "DEMO" || req.user.role === "DEMO") {
@@ -12,7 +14,7 @@ const staffGuard = (req: any, res: any, next: any) => {
   next();
 };
 
-router.get("/", authenticate, async (req: AuthRequest, res: Response) => {
+router.get("/", async (req: AuthRequest, res: Response) => {
   try {
     const user = req.user as any;
     const where: any = {};
@@ -34,7 +36,7 @@ router.get("/", authenticate, async (req: AuthRequest, res: Response) => {
   }
 });
 
-router.post("/", authenticate, staffGuard, async (req: AuthRequest, res: Response) => {
+router.post("/", staffGuard, async (req: AuthRequest, res: Response) => {
   try {
     const user = req.user as any;
     const { name, phone, email, address } = req.body;
@@ -50,7 +52,7 @@ router.post("/", authenticate, staffGuard, async (req: AuthRequest, res: Respons
   }
 });
 
-router.put("/:id", authenticate, staffGuard, async (req: AuthRequest, res: Response) => {
+router.put("/:id", staffGuard, async (req: AuthRequest, res: Response) => {
   try {
     const user = req.user as any;
     const { name, phone, email, address } = req.body;
@@ -68,7 +70,7 @@ router.put("/:id", authenticate, staffGuard, async (req: AuthRequest, res: Respo
   }
 });
 
-router.delete("/:id", authenticate, staffGuard, async (req: AuthRequest, res: Response) => {
+router.delete("/:id", staffGuard, async (req: AuthRequest, res: Response) => {
   try {
     const user = req.user as any;
     const where: any = { id: Number(req.params.id) };

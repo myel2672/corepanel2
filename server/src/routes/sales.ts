@@ -1,10 +1,11 @@
 ﻿import { Router } from "express";
 import { PrismaClient } from "@prisma/client";
-import { authenticate, requireNotDemo } from "../middleware/auth";
+import { authenticate, requireBusinessUser, requireNotDemo } from "../middleware/auth";
 
 const router = Router();
 const prisma = new PrismaClient();
 router.use(authenticate);
+router.use(requireBusinessUser);
 
 // GET /sales/me
 router.get("/me", async (req: any, res) => {

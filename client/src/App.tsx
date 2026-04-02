@@ -23,6 +23,11 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
   return token ? <>{children}</> : <Navigate to="/login" />;
 }
 
+function BusinessDataRoute({ children }: { children: React.ReactNode }) {
+  const user = useAuthStore((s) => s.user);
+  return user?.role === 'MAIN_ADMIN' ? <Navigate to="/admin" replace /> : <>{children}</>;
+}
+
 function App() {
   return (
     <BrowserRouter>
@@ -36,13 +41,13 @@ function App() {
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route element={<PrivateRoute><Layout /></PrivateRoute>}>
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/orders" element={<OrdersPage />} />
-          <Route path="/products" element={<ProductsPage />} />
-          <Route path="/sales" element={<SalesPage />} />
+          <Route path="/orders" element={<BusinessDataRoute><OrdersPage /></BusinessDataRoute>} />
+          <Route path="/products" element={<BusinessDataRoute><ProductsPage /></BusinessDataRoute>} />
+          <Route path="/sales" element={<BusinessDataRoute><SalesPage /></BusinessDataRoute>} />
           <Route path="/admin" element={<MainAdminDashboard />} />
           <Route path="/business" element={<BusinessPanel />} />
-          <Route path="/customers" element={<CustomersPage />} />
-          <Route path="/reports" element={<ReportsPage />} />
+          <Route path="/customers" element={<BusinessDataRoute><CustomersPage /></BusinessDataRoute>} />
+          <Route path="/reports" element={<BusinessDataRoute><ReportsPage /></BusinessDataRoute>} />
           <Route path="/account" element={<AccountPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/login" />} />

@@ -19,6 +19,9 @@ const getDateRange = (startDate?: string, endDate?: string) => {
 
 // GET /reports/summary?startDate=2024-01-01&endDate=2024-01-31
 router.get('/summary', authenticate, async (req: AuthRequest, res) => {
+  if ((req.user as any)?.role === 'MAIN_ADMIN') {
+    return res.status(403).json({ message: 'Bu alan sadece isletme hesaplari icindir' });
+  }
   try {
     const user = req.user as any;
     const { start, end } = getDateRange(
@@ -101,6 +104,9 @@ router.get('/summary', authenticate, async (req: AuthRequest, res) => {
 
 // GET /reports/export?startDate=...&endDate=...&type=sales|orders|all
 router.get('/export', authenticate, async (req: AuthRequest, res) => {
+  if ((req.user as any)?.role === 'MAIN_ADMIN') {
+    return res.status(403).json({ message: 'Bu alan sadece isletme hesaplari icindir' });
+  }
   try {
     const user = req.user as any;
     const { start, end } = getDateRange(

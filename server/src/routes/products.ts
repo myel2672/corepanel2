@@ -1,11 +1,12 @@
 import { Router } from "express";
 import { PrismaClient } from "@prisma/client";
-import { authenticate } from "../middleware/auth";
+import { authenticate, requireBusinessUser } from "../middleware/auth";
 
 const router = Router();
 const prisma = new PrismaClient();
 
 router.use(authenticate);
+router.use(requireBusinessUser);
 
 const staffGuard = (req: any, res: any, next: any) => {
   if (req.user.role === "STAFF" || req.user.role === "DEMO" || req.user.role === "DEMO") {

@@ -160,7 +160,7 @@ router.get('/export', authenticate, async (req: AuthRequest, res) => {
     }
 
     const csv = rows
-      .map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(','))
+      .map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(';'))
       .join('\n');
 
     // BOM ekle — Excel Türkçe karakter sorunu için

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { PrismaClient } from "@prisma/client";
 import { authenticate } from "../middleware/auth";
+import { seedDemoData } from "../services/demoSeed";
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -109,6 +110,21 @@ router.put("/:id/approve", async (req: any, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Onaylama başarısız" });
+  }
+});
+
+// POST /businesses/seed-demo
+router.post("/seed-demo", async (req: any, res) => {
+  try {
+    if (req.user.role !== "MAIN_ADMIN") return res.status(403).json({ message: "Yetkisiz" });
+    const result = await seedDemoData(prisma);
+    res.json({
+      message: "Demo verisi yenilendi",
+      ...result,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Demo verisi yenilenemedi" });
   }
 });
 

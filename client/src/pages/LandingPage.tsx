@@ -7,7 +7,7 @@ export default function LandingPage() {
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
-
+        html, body { background: #0a0a0f !important; }
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         
         :root {
@@ -19,8 +19,8 @@ export default function LandingPage() {
           --dark2: #12121a;
           --dark3: #1a1a26;
           --border: rgba(255,255,255,0.07);
-          --text: #e2e8f0;
-          --muted: #64748b;
+          --text: #e2e8f0; /* açık gri */
+          --muted: #94a3b8; /* biraz daha açık gri */
         }
 
         html { scroll-behavior: smooth; }
@@ -66,128 +66,121 @@ export default function LandingPage() {
         .nav-cta:hover { background: var(--indigo-dark); transform: translateY(-1px); box-shadow: 0 4px 24px rgba(99,102,241,0.5); }
 
         /* ── HERO ── */
-        .hero {
-          min-height: 100vh;
-          display: flex; flex-direction: column;
-          align-items: center; justify-content: center;
-          text-align: center;
-          padding: 120px 24px 80px;
-          position: relative; overflow: hidden;
-        }
-        .hero-bg {
-          position: absolute; inset: 0; z-index: 0;
-          background:
-            radial-gradient(ellipse 80% 50% at 50% -10%, rgba(99,102,241,0.25) 0%, transparent 70%),
-            radial-gradient(ellipse 40% 30% at 80% 80%, rgba(6,182,212,0.1) 0%, transparent 60%);
-        }
-        .hero-grid {
-          position: absolute; inset: 0; z-index: 0;
-          background-image:
-            linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
-          background-size: 60px 60px;
-          mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 0%, transparent 100%);
-        }
-        .hero-badge {
-          display: inline-flex; align-items: center; gap: 8px;
-          padding: 6px 16px;
-          background: rgba(99,102,241,0.1);
-          border: 1px solid rgba(99,102,241,0.3);
-          border-radius: 100px;
-          font-size: 12px; font-weight: 600; color: var(--indigo-light);
-          letter-spacing: 0.5px;
-          margin-bottom: 28px;
-          position: relative; z-index: 1;
-          animation: fadeUp 0.6s ease both;
-        }
-        .hero-badge-dot { width: 6px; height: 6px; background: var(--cyan); border-radius: 50%; animation: pulse 2s infinite; }
-        @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
-        .hero-title {
-          font-family: 'Syne', sans-serif;
-          font-size: clamp(42px, 7vw, 80px);
-          font-weight: 800; line-height: 1.05;
-          letter-spacing: -2px;
-          color: #fff;
-          margin-bottom: 24px;
-          position: relative; z-index: 1;
-          animation: fadeUp 0.6s 0.1s ease both;
-        }
-        .hero-title em {
-          font-style: normal;
-          background: linear-gradient(135deg, var(--indigo-light), var(--cyan));
-          -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-          background-clip: text;
-        }
-        .hero-desc {
-          font-size: 18px; font-weight: 400; color: #94a3b8;
-          max-width: 560px; line-height: 1.7;
-          margin-bottom: 44px;
-          position: relative; z-index: 1;
-          animation: fadeUp 0.6s 0.2s ease both;
-        }
-        .hero-btns {
-          display: flex; gap: 14px; justify-content: center;
-          position: relative; z-index: 1;
-          animation: fadeUp 0.6s 0.3s ease both;
-        }
-        .btn-primary {
-          padding: 14px 32px;
-          background: var(--indigo);
-          border: none; border-radius: 12px;
-          color: #fff; font-size: 15px; font-weight: 600;
-          font-family: 'DM Sans', sans-serif;
-          cursor: pointer; transition: all 0.2s;
-          box-shadow: 0 4px 24px rgba(99,102,241,0.4);
-        }
-        .btn-primary:hover { background: var(--indigo-dark); transform: translateY(-2px); box-shadow: 0 8px 32px rgba(99,102,241,0.5); }
-        .btn-secondary {
-          padding: 14px 32px;
-          background: transparent;
-          border: 1px solid var(--border);
-          border-radius: 12px;
-          color: #cbd5e1; font-size: 15px; font-weight: 600;
-          font-family: 'DM Sans', sans-serif;
-          cursor: pointer; transition: all 0.2s;
-        }
-        .btn-secondary:hover { border-color: rgba(255,255,255,0.2); color: #fff; background: rgba(255,255,255,0.04); }
-        .hero-stats {
-          display: flex; gap: 48px; justify-content: center;
-          margin-top: 72px;
-          position: relative; z-index: 1;
-          animation: fadeUp 0.6s 0.4s ease both;
-        }
-        .hero-stat-val {
-          font-family: 'Syne', sans-serif;
-          font-size: 32px; font-weight: 800; color: #fff;
-          letter-spacing: -1px;
-        }
-        .hero-stat-val span { color: var(--indigo-light); }
-        .hero-stat-lbl { font-size: 13px; color: var(--muted); margin-top: 4px; font-weight: 500; }
+.hero {
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  text-align: center;
+  padding: 120px 24px 80px;
+  position: relative; overflow: hidden;
+}
 
-        @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
+.hero-bg {
+  position: absolute; inset: 0; z-index: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(99,102,241,0.25) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 30% at 80% 80%, rgba(6,182,212,0.1) 0%, transparent 60%);
+}
 
-        /* ── SECTION ORTAK ── */
-        .section { padding: 100px 24px; }
-        .section-inner { max-width: 1100px; margin: 0 auto; }
-        .section-tag {
-          display: inline-block;
-          font-size: 11px; font-weight: 700;
-          letter-spacing: 2px; text-transform: uppercase;
-          color: var(--indigo-light);
-          margin-bottom: 16px;
-        }
-        .section-title {
-          font-family: 'Syne', sans-serif;
-          font-size: clamp(28px, 4vw, 44px);
-          font-weight: 800; color: #fff;
-          letter-spacing: -1px; line-height: 1.1;
-          margin-bottom: 16px;
-        }
-        .section-desc { font-size: 16px; color: #64748b; line-height: 1.7; max-width: 560px; }
+.hero-grid {
+  position: absolute; inset: 0; z-index: 0;
+  background-image:
+    linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 0%, transparent 100%);
+}
 
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 16px;
+  background: rgba(99,102,241,0.1);
+  border: 1px solid rgba(99,102,241,0.3);
+  border-radius: 100px;
+  font-size: 12px; font-weight: 600; color: var(--indigo-dark);
+  letter-spacing: 0.5px;
+  margin-bottom: 28px;
+  position: relative; z-index: 1;
+  animation: fadeUp 0.6s ease both;
+}
+
+.hero-title {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(42px, 7vw, 80px);
+  font-weight: 800; line-height: 1.05;
+  letter-spacing: -2px;
+  color: #111; /* koyu siyah-gri, beyaz arka planda net */
+  margin-bottom: 24px;
+  position: relative; z-index: 1;
+  animation: fadeUp 0.6s 0.1s ease both;
+}
+
+.hero-title em {
+  font-style: normal;
+  background: linear-gradient(135deg, var(--indigo-light), var(--cyan));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-desc {
+  font-size: 18px; font-weight: 400; color: #333; /* koyulaştırıldı */
+  max-width: 560px; line-height: 1.7;
+  margin-bottom: 44px;
+  position: relative; z-index: 1;
+  animation: fadeUp 0.6s 0.2s ease both;
+}
+
+.hero-btns {
+  display: flex; gap: 14px; justify-content: center;
+  position: relative; z-index: 1;
+  animation: fadeUp 0.6s 0.3s ease both;
+}
+
+.btn-primary {
+  padding: 14px 32px;
+  background: var(--indigo);
+  border: none; border-radius: 12px;
+  color: #fff; font-size: 15px; font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer; transition: all 0.2s;
+  box-shadow: 0 4px 24px rgba(99,102,241,0.4);
+}
+
+.btn-primary:hover {
+  background: var(--indigo-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(99,102,241,0.5);
+}
+
+.btn-secondary {
+  padding: 14px 32px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 12px;
+  color: #e2e8f0; font-size: 15px; font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer; transition: all 0.2s;
+}
+.btn-secondary:hover { border-color: rgba(255,255,255,0.4); color: #fff; background: rgba(255,255,255,0.1); }
+
+.btn-secondary:hover {
+  border-color: rgba(0,0,0,0.2);
+  color: #000;
+  background: rgba(0,0,0,0.04);
+}
+
+.hero-stat-val {
+  font-family: 'Syne', sans-serif;
+  font-size: 32px; font-weight: 800; color: #111; /* koyulaştırıldı */
+  letter-spacing: -1px;
+}
+
+.hero-stat-val span { color: var(--indigo-dark); }
+
+.hero-stat-lbl {
+  font-size: 13px; color: #444; /* muted yerine daha koyu */
+  margin-top: 4px; font-weight: 500;
+}
         /* ── FEATURES ── */
         .features-grid {
           display: grid; grid-template-columns: repeat(3, 1fr);

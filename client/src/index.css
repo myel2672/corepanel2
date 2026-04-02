@@ -68,3 +68,22 @@ html, body, #root {
   padding: 0;
   background: #f8fafc;
 }
+/* LANDING CONTRAST FIX */
+.light-section {
+  color: #0f172a; /* slate-900 */
+}
+
+.light-section h1,
+.light-section h2,
+.light-section h3,
+.light-section h4 {
+  color: #020617; /* daha koyu */
+}
+
+.light-section p {
+  color: #334155; /* slate-700 */
+}
+
+.light-section .muted {
+  color: #64748b; /* slate-500 */
+}

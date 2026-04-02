@@ -121,14 +121,25 @@ export default function ReportsPage() {
 
   const handleExport = async () => {
     setExportLoading(true);
+    setError('');
     try {
       const res = await api.get(`/reports/export?startDate=${startDate}&endDate=${endDate}&type=all`, {
         responseType: 'blob',
       });
-      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const blob = res.data instanceof Blob
+        ? res.data
+        : new Blob([res.data], {
+            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          });
+      const contentDisposition = res.headers['content-disposition'];
+      const fileNameMatch = typeof contentDisposition === 'string'
+        ? contentDisposition.match(/filename="([^"]+)"/i)
+        : null;
+      const fileName = fileNameMatch?.[1] || `corepanel_rapor_${startDate}_${endDate}.xlsx`;
+      const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `corepanel_rapor_${startDate}_${endDate}.csv`;
+      a.download = fileName;
       a.click();
       window.URL.revokeObjectURL(url);
     } catch {

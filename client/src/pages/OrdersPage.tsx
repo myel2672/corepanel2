@@ -30,6 +30,8 @@ const styles = `
   .op-status-select { padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; border: none; cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif; outline: none; }
   .op-status-text { padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; display: inline-block; }
   .op-customer-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; background: #f0fdf4; color: #059669; border: 1px solid #bbf7d0; }
+  .op-customer-meta { display: flex; flex-direction: column; gap: 4px; }
+  .op-customer-address { font-size: 12px; color: #94a3b8; line-height: 1.4; max-width: 240px; }
   .op-btn-invoice { padding: 5px 12px; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 7px; font-size: 11px; font-weight: 700; color: #6366f1; cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif; transition: all 0.15s; white-space: nowrap; }
   .op-btn-invoice:hover { background: #eef2ff; border-color: #c7d2fe; }
 
@@ -163,7 +165,7 @@ export default function OrdersPage() {
       <style>{styles}</style>
       <div className="op">
         <div className="op-title">Siparişler</div>
-        <div className="op-subtitle">{orders.length} sipariş listeleniyor</div>
+        <div className="op-subtitle">{orders.length} sipariş listeleniyor · Müşteri bazlı takip edilen sipariş akışı</div>
 
         {formError && <div className="op-error">{formError}</div>}
         {formSuccess && <div className="op-success">✓ {formSuccess}</div>}
@@ -186,7 +188,7 @@ export default function OrdersPage() {
               </select>
             </div>
             <div className="op-field">
-              <span className="op-label">Müşteri (İsteğe Bağlı)</span>
+              <span className="op-label">Müşteri (Sipariş Takibi İçin)</span>
               <select className="op-select" style={{ width: 200 }} value={selectedCustomer} onChange={e => { setSelectedCustomer(e.target.value); setFormError(''); }}>
                 <option value="">— Müşteri seçin —</option>
                 {customers.map(c => (
@@ -230,9 +232,14 @@ export default function OrdersPage() {
                       <td className="op-td" style={{ color: '#cbd5e1', fontSize: 12, fontWeight: 700 }}>#{order.id}</td>
                       <td className="op-td" style={{ color: '#0f172a', fontWeight: 700 }}>{order.product?.name ?? '—'}</td>
                       <td className="op-td">
-                        {order.customer
-                          ? <span className="op-customer-badge">👤 {order.customer.name}</span>
-                          : <span style={{ color: '#cbd5e1' }}>—</span>}
+                        {order.customer ? (
+                          <div className="op-customer-meta">
+                            <span className="op-customer-badge">👤 {order.customer.name}</span>
+                            {order.customer.address ? (
+                              <span className="op-customer-address">{order.customer.address}</span>
+                            ) : null}
+                          </div>
+                        ) : <span style={{ color: '#cbd5e1' }}>—</span>}
                       </td>
                       <td className="op-td" style={{ fontWeight: 600 }}>{order.quantity}</td>
                       <td className="op-td" style={{ color: '#6366f1', fontWeight: 800 }}>{total.toFixed(2)} ₺</td>
@@ -304,6 +311,12 @@ export default function OrdersPage() {
                   <div style={{ gridColumn: '1/-1' }}>
                     <div className="inv-meta-label">Müşteri</div>
                     <div className="inv-meta-val">{selectedInvoice.customer.name}{selectedInvoice.customer.phone ? ` · ${selectedInvoice.customer.phone}` : ''}</div>
+                  </div>
+                )}
+                {selectedInvoice.customer && (
+                  <div style={{ gridColumn: '1/-1' }}>
+                    <div className="inv-meta-label">Adres</div>
+                    <div className="inv-meta-val">{selectedInvoice.customer.address || 'Adres belirtilmedi'}</div>
                   </div>
                 )}
                 <div style={{ gridColumn: '1/-1' }}>

@@ -19,7 +19,13 @@ router.get("/", authenticate, async (req: AuthRequest, res: Response) => {
     if (user.role !== "MAIN_ADMIN") where.businessId = Number(user.businessId);
     const customers = await prisma.customer.findMany({
       where,
-      include: { orders: { orderBy: { createdAt: "desc" }, take: 5 } },
+      include: {
+        orders: {
+          include: { product: true },
+          orderBy: { createdAt: "desc" },
+          take: 5,
+        },
+      },
       orderBy: { createdAt: "desc" },
     });
     res.json(customers);

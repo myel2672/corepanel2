@@ -11,6 +11,7 @@ const navItems = [
   { to: '/reports', label: 'Raporlar', icon: '◫', roles: ['MAIN_ADMIN', 'ADMIN', 'DEMO'] },
   { to: '/business', label: 'İşletme', icon: '◐', roles: ['ADMIN'] },
   { to: '/admin', label: 'İşletmeler', icon: '❖', roles: ['MAIN_ADMIN'] },
+  { to: '/account', label: 'Hesabim', icon: '⚙', roles: ['MAIN_ADMIN', 'ADMIN', 'STAFF'] },
 ];
 
 export default function Layout() {

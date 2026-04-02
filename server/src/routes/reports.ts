@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { PrismaClient } from "@prisma/client";
 import { authenticate, AuthRequest } from "../middleware/auth";
+import XLSX from "xlsx";
+
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -159,15 +161,27 @@ router.get('/export', authenticate, async (req: AuthRequest, res) => {
       });
     }
 
-    const csv = rows
-      .map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(';'))
-      .join('\n');
+    const worksheet = XLSX.utils.aoa_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
 
-    // BOM ekle — Excel Türkçe karakter sorunu için
-    const bom = '\uFEFF';
-    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename="corepanel_rapor_${new Date().toISOString().slice(0,10)}.csv"`);
-    res.send(bom + "sep=;\n" + csv);
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Rapor");
+
+    const excelBuffer = Buffer.from(XLSX.write(workbook, {
+      type: 'buffer',
+      bookType: 'xlsx',
+    }));
+
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="corepanel_rapor_${new Date().toISOString().slice(0, 10)}.xlsx"`
+    );
+    res.send(excelBuffer);
+
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Export başarısız' });

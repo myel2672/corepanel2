@@ -4,7 +4,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
 import crypto from "crypto";
-import { authenticate } from "../middleware/auth";
+import { authenticate, AuthRequest, requireNotDemo } from "../middleware/auth";
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -265,6 +265,53 @@ router.post("/reset-password", async (req, res) => {
 });
 
 // ─── ME ──────────────────────────────────────────────────
+router.post("/change-password", authenticate, requireNotDemo, async (req: AuthRequest, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: "Mevcut sifre ve yeni sifre zorunludur" });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: "Yeni sifre en az 6 karakter olmalidir" });
+    }
+
+    if (currentPassword === newPassword) {
+      return res.status(400).json({ message: "Yeni sifre mevcut sifreden farkli olmalidir" });
+    }
+
+    const userId = Number(req.user?.id);
+    if (!userId) {
+      return res.status(401).json({ message: "Kullanici dogrulanamadi" });
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      return res.status(404).json({ message: "Kullanici bulunamadi" });
+    }
+
+    const isValid = await bcrypt.compare(currentPassword, user.password);
+    if (!isValid) {
+      return res.status(400).json({ message: "Mevcut sifre hatali" });
+    }
+
+    const hashed = await bcrypt.hash(newPassword, 10);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { password: hashed },
+    });
+
+    await prisma.refreshToken.deleteMany({ where: { userId: user.id } });
+
+    res.json({ message: "Sifre guncellendi. Lutfen tekrar giris yapin." });
+  } catch (err) {
+    console.error("Change password error:", err);
+    res.status(500).json({ message: "Sifre degistirilemedi" });
+  }
+});
+
 router.get("/me", authenticate, async (req: any, res) => {
   try {
     const user = await prisma.user.findUnique({

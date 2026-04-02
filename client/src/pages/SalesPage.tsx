@@ -144,7 +144,7 @@ export default function SalesPage() {
       <div className="sp">
         <div className="sp-header">
           <div className="sp-title">Satışlar</div>
-          <div className="sp-subtitle">İşletmenizin satış kayıtları</div>
+          <div className="sp-subtitle">İşletmenizin anında tamamlanan satış kayıtları</div>
         </div>
 
         {formError && <div className="sp-error">{formError}</div>}

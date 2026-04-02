@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuthStore } from '../store/authStore';
 
 export default function LoginPage() {
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -11,6 +12,7 @@ export default function LoginPage() {
   const [demoLoading, setDemoLoading] = useState(false);
   const setAuth = useAuthStore((s) => s.setAuth);
   const navigate = useNavigate();
+  const passwordChanged = searchParams.get('passwordChanged') === 'true';
 
   const handleLogin = async () => {
     if (!email || !password) { setError('E-posta ve şifre gereklidir.'); return; }
@@ -281,6 +283,16 @@ export default function LoginPage() {
           font-weight: 600;
           margin-bottom: 16px;
         }
+        .login-success {
+          background: #ecfdf5;
+          border: 1px solid #a7f3d0;
+          color: #059669;
+          padding: 12px 16px;
+          border-radius: 10px;
+          font-size: 13px;
+          font-weight: 600;
+          margin-bottom: 16px;
+        }
         .login-forgot {
           text-align: center;
           margin-top: 16px;
@@ -358,6 +370,9 @@ export default function LoginPage() {
             <div className="login-form-subtitle">Hesabınıza giriş yapın</div>
 
             {error && <div className="login-error">{error}</div>}
+            {!error && passwordChanged && (
+              <div className="login-success">Sifreniz guncellendi. Yeni sifrenizle tekrar giris yapabilirsiniz.</div>
+            )}
 
             <label className="login-label">E-Posta</label>
             <input

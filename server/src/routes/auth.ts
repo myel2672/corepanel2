@@ -4,7 +4,13 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
 import crypto from "crypto";
-import { authenticate, AuthRequest, requireNotDemo } from "../middleware/auth";
+import {
+  authenticate,
+  AuthRequest,
+  BUSINESS_APPROVAL_REQUIRED_MESSAGE,
+  getBusinessApprovalBlock,
+  requireNotDemo,
+} from "../middleware/auth";
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -92,6 +98,11 @@ router.post("/login", async (req, res) => {
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) return res.status(401).json({ message: "E-posta veya şifre hatalı" });
 
+    const businessBlockMessage = await getBusinessApprovalBlock(user);
+    if (businessBlockMessage) {
+      return res.status(403).json({ message: businessBlockMessage });
+    }
+
     const accessToken = jwt.sign(
       { id: user.id, email: user.email, role: user.role, businessId: user.businessId },
       JWT_SECRET,
@@ -141,6 +152,12 @@ router.post("/refresh", async (req, res) => {
     const decoded = jwt.verify(refreshToken, JWT_REFRESH_SECRET) as any;
     const user = await prisma.user.findUnique({ where: { id: decoded.id } });
     if (!user) return res.status(401).json({ message: "Kullanıcı bulunamadı" });
+
+    const businessBlockMessage = await getBusinessApprovalBlock(user);
+    if (businessBlockMessage) {
+      await prisma.refreshToken.deleteMany({ where: { userId: user.id } });
+      return res.status(403).json({ message: businessBlockMessage });
+    }
 
     const accessToken = jwt.sign(
       { id: user.id, email: user.email, role: user.role, businessId: user.businessId },
@@ -329,6 +346,10 @@ router.post("/demo-login", async (req, res) => {
   try {
     const user = await prisma.user.findUnique({ where: { email: "demo@corepanel.com" } });
     if (!user) return res.status(404).json({ message: "Demo hesap bulunamadi" });
+    const businessBlockMessage = await getBusinessApprovalBlock(user);
+    if (businessBlockMessage) {
+      return res.status(403).json({ message: BUSINESS_APPROVAL_REQUIRED_MESSAGE });
+    }
     const token = jwt.sign(
       { id: user.id, role: user.role, businessId: user.businessId },
       JWT_SECRET,

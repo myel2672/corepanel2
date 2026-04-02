@@ -13,6 +13,7 @@ export default function LoginPage() {
   const setAuth = useAuthStore((s) => s.setAuth);
   const navigate = useNavigate();
   const passwordChanged = searchParams.get('passwordChanged') === 'true';
+  const approvalPending = searchParams.get('approvalPending') === 'true';
 
   const handleLogin = async () => {
     if (!email || !password) { setError('E-posta ve şifre gereklidir.'); return; }
@@ -21,8 +22,8 @@ export default function LoginPage() {
       const res = await api.post('/auth/login', { email, password });
       setAuth(res.data.user, res.data.token, res.data.refreshToken);
       navigate('/dashboard');
-    } catch {
-      setError('E-posta veya şifre hatalı.');
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'Giris basarisiz.');
     } finally {
       setLoading(false);
     }
@@ -34,8 +35,8 @@ export default function LoginPage() {
       const res = await api.post('/auth/demo-login');
       setAuth(res.data.user, res.data.token, res.data.refreshToken);
       navigate('/dashboard');
-    } catch {
-      setError('Demo girişi başarısız.');
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'Demo girisi basarisiz.');
     } finally {
       setDemoLoading(false);
     }
@@ -370,6 +371,9 @@ export default function LoginPage() {
             <div className="login-form-subtitle">Hesabınıza giriş yapın</div>
 
             {error && <div className="login-error">{error}</div>}
+            {!error && approvalPending && (
+              <div className="login-error">Isletme onayi bekleniyor. MAIN_ADMIN onayi sonrasi giris yapabilirsiniz.</div>
+            )}
             {!error && passwordChanged && (
               <div className="login-success">Sifreniz guncellendi. Yeni sifrenizle tekrar giris yapabilirsiniz.</div>
             )}

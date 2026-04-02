@@ -5,6 +5,9 @@ const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000',
 });
 
+const BUSINESS_APPROVAL_REQUIRED_MESSAGE =
+  'Isletme onayi bekleniyor. MAIN_ADMIN onayi sonrasi giris yapabilirsiniz.';
+
 // Request interceptor — her isteğe token ekle
 api.interceptors.request.use((config) => {
   const token = useAuthStore.getState().token;
@@ -30,6 +33,12 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+
+    if (error.response?.status === 403 && error.response?.data?.message === BUSINESS_APPROVAL_REQUIRED_MESSAGE) {
+      useAuthStore.getState().logout();
+      window.location.href = '/login?approvalPending=true';
+      return Promise.reject(error);
+    }
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {

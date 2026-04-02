@@ -167,7 +167,7 @@ router.get('/export', authenticate, async (req: AuthRequest, res) => {
     const bom = '\uFEFF';
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="corepanel_rapor_${new Date().toISOString().slice(0,10)}.csv"`);
-    res.send(bom + csv);
+    res.send(bom + "sep=;\n" + csv);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Export başarısız' });

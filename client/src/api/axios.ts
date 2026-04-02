@@ -8,6 +8,13 @@ const api = axios.create({
 const BUSINESS_APPROVAL_REQUIRED_MESSAGE =
   'Isletme onayi bekleniyor. MAIN_ADMIN onayi sonrasi giris yapabilirsiniz.';
 
+const isApprovalPendingError = (error: any) =>
+  error.response?.status === 403 &&
+  error.response?.data?.message === BUSINESS_APPROVAL_REQUIRED_MESSAGE;
+
+const isAuthEntryRequest = (requestUrl?: string) =>
+  requestUrl?.includes('/auth/login') || requestUrl?.includes('/auth/demo-login');
+
 // Request interceptor — her isteğe token ekle
 api.interceptors.request.use((config) => {
   const token = useAuthStore.getState().token;
@@ -34,7 +41,11 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 403 && error.response?.data?.message === BUSINESS_APPROVAL_REQUIRED_MESSAGE) {
+    if (isApprovalPendingError(error)) {
+      if (isAuthEntryRequest(originalRequest?.url)) {
+        return Promise.reject(error);
+      }
+
       useAuthStore.getState().logout();
       window.location.href = '/login?approvalPending=true';
       return Promise.reject(error);

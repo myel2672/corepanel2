@@ -3,6 +3,8 @@ import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuthStore } from '../store/authStore';
 
+const APPROVAL_PENDING_MESSAGE = 'İşletme onayı bekleniyor. MAIN_ADMIN onayı sonrası giriş yapabilirsiniz.';
+
 export default function LoginPage() {
   const [searchParams] = useSearchParams();
   const [email, setEmail] = useState('');
@@ -23,7 +25,11 @@ export default function LoginPage() {
       setAuth(res.data.user, res.data.token, res.data.refreshToken);
       navigate('/dashboard');
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'Giris basarisiz.');
+      if (err?.response?.status === 403) {
+        setError(APPROVAL_PENDING_MESSAGE);
+      } else {
+        setError(err?.response?.data?.message || 'Giris basarisiz.');
+      }
     } finally {
       setLoading(false);
     }
@@ -36,7 +42,11 @@ export default function LoginPage() {
       setAuth(res.data.user, res.data.token, res.data.refreshToken);
       navigate('/dashboard');
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'Demo girisi basarisiz.');
+      if (err?.response?.status === 403) {
+        setError(APPROVAL_PENDING_MESSAGE);
+      } else {
+        setError(err?.response?.data?.message || 'Demo girisi basarisiz.');
+      }
     } finally {
       setDemoLoading(false);
     }
@@ -372,7 +382,7 @@ export default function LoginPage() {
 
             {error && <div className="login-error">{error}</div>}
             {!error && approvalPending && (
-              <div className="login-error">Isletme onayi bekleniyor. MAIN_ADMIN onayi sonrasi giris yapabilirsiniz.</div>
+              <div className="login-error">{APPROVAL_PENDING_MESSAGE}</div>
             )}
             {!error && passwordChanged && (
               <div className="login-success">Sifreniz guncellendi. Yeni sifrenizle tekrar giris yapabilirsiniz.</div>

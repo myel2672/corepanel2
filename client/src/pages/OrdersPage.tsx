@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import api from '../api/axios';
 import { useAuthStore } from '../store/authStore';
+import Pagination from '../components/Pagination';
 
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
@@ -99,11 +100,14 @@ export default function OrdersPage() {
   const [selectedProduct, setSelectedProduct] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState('');
   const [quantity, setQuantity] = useState('');
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({ totalPages: 1, total: 0, hasNext: false, hasPrev: false });
 
-  const fetchOrders = async () => {
+  const fetchOrders = async (p = page) => {
     try {
-      const res = await api.get('/orders');
-      setOrders(res.data);
+      const res = await api.get('/orders', { params: { page: p, limit: 20 } });
+      setOrders(res.data.data);
+      setPagination(res.data.pagination);
     } catch {
       setFormError('Siparişler yüklenemedi.');
     } finally {
@@ -124,6 +128,7 @@ export default function OrdersPage() {
   };
 
   useEffect(() => { fetchOrders(); fetchProducts(); fetchCustomers(); fetchBusiness(); }, []);
+  useEffect(() => { fetchOrders(page); }, [page]);
 
   const handleAddOrder = async () => {
     if (!selectedProduct) { setFormError('Lütfen ürün seçin.'); return; }
@@ -165,7 +170,7 @@ export default function OrdersPage() {
       <style>{styles}</style>
       <div className="op">
         <div className="op-title">Siparişler</div>
-        <div className="op-subtitle">{orders.length} sipariş listeleniyor · Müşteri bazlı takip edilen sipariş akışı</div>
+        <div className="op-subtitle">{pagination.total} sipariş listeleniyor · Müşteri bazlı takip edilen sipariş akışı</div>
 
         {formError && <div className="op-error">{formError}</div>}
         {formSuccess && <div className="op-success">✓ {formSuccess}</div>}
@@ -276,6 +281,15 @@ export default function OrdersPage() {
             </table>
           )}
         </div>
+
+        <Pagination
+          page={page}
+          totalPages={pagination.totalPages}
+          total={pagination.total}
+          hasNext={pagination.hasNext}
+          hasPrev={pagination.hasPrev}
+          onPageChange={setPage}
+        />
       </div>
 
       {/* FATURA MODAL */}

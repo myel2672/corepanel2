@@ -2,6 +2,9 @@ import { Router } from "express";
 import { authenticate, requireBusinessUser, requireNotDemo } from "../middleware/auth";
 import { validate } from "../middleware/validate";
 import { createSaleSchema } from "../schemas/order.schema";
+import { paginate, paginateResponse, PaginatedRequest } from "../middleware/pagination";
+import { checkUsageLimit } from "../middleware/usageLimit";
+import { auditLog } from "../middleware/auditLog";
 import prisma from "../prisma";
 
 const router = Router();
@@ -9,16 +12,21 @@ router.use(authenticate);
 router.use(requireBusinessUser);
 
 // GET /sales/me
-router.get("/me", async (req: any, res) => {
+router.get("/me", paginate(), async (req: PaginatedRequest, res) => {
   try {
-    const user = req.user;
+    const user = req.user as any;
     const where = user.role === "MAIN_ADMIN" ? {} : { businessId: Number(user.businessId) };
-    const sales = await prisma.sale.findMany({
-      where,
-      include: { product: true },
-      orderBy: { createdAt: "desc" },
-    });
-    res.json(sales);
+    const [sales, total] = await Promise.all([
+      prisma.sale.findMany({
+        where,
+        include: { product: true },
+        orderBy: { createdAt: "desc" },
+        skip: req.pagination.skip,
+        take: req.pagination.limit,
+      }),
+      prisma.sale.count({ where }),
+    ]);
+    return paginateResponse(res, sales, total, req.pagination.page, req.pagination.limit);
   } catch {
     res.status(500).json({ message: "Satışlar yüklenemedi" });
   }

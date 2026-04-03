@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import api from '../api/axios';
 import { useAuthStore } from '../store/authStore';
+import Pagination from '../components/Pagination';
 
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
@@ -92,11 +93,17 @@ export default function SalesPage() {
   const [formSuccess, setFormSuccess] = useState('');
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
   const [business, setBusiness] = useState<any>(null);
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({ totalPages: 1, total: 0, hasNext: false, hasPrev: false });
   const user = useAuthStore((s) => s.user);
   const isDemo = user?.role === 'DEMO';
 
-  const fetchSales = async () => {
-    try { const r = await api.get('/sales/me'); setSales(r.data || []); } catch {}
+  const fetchSales = async (p = page) => {
+    try {
+      const r = await api.get('/sales/me', { params: { page: p, limit: 20 } });
+      setSales(r.data.data || []);
+      setPagination(r.data.pagination);
+    } catch {}
   };
 
   const fetchProducts = async () => {
@@ -108,6 +115,7 @@ export default function SalesPage() {
   };
 
   useEffect(() => { fetchSales(); fetchProducts(); fetchBusiness(); }, []);
+  useEffect(() => { fetchSales(page); }, [page]);
 
   const handleProductChange = (id: string) => {
     setProductId(id);
@@ -218,7 +226,7 @@ export default function SalesPage() {
             <div className="sp-list-card">
               <div className="sp-list-header">
                 <div className="sp-list-title">Son Satışlar</div>
-                <div className="sp-list-count">{sales.length} kayıt</div>
+                <div className="sp-list-count">{pagination.total} kayıt</div>
               </div>
               {sales.length === 0 ? (
                 <div className="sp-empty">Henüz satış kaydı yok</div>
@@ -248,6 +256,15 @@ export default function SalesPage() {
               )}
             </div>
           </div>
+
+          <Pagination
+            page={page}
+            totalPages={pagination.totalPages}
+            total={pagination.total}
+            hasNext={pagination.hasNext}
+            hasPrev={pagination.hasPrev}
+            onPageChange={setPage}
+          />
         </div>
       </div>
 

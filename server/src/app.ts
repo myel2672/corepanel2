@@ -12,6 +12,7 @@ import orderRoutes from "./routes/orders";
 import customerRoutes from "./routes/customer";
 import dashboardRoutes from "./routes/dashboard";
 import inviteRoutes from "./routes/invite";
+import stripeRoutes from "./routes/stripe";
 import { errorHandler } from "./middleware/errorHandler";
 
 const app = express();
@@ -62,6 +63,7 @@ app.use("/orders", orderRoutes);
 app.use("/customers", customerRoutes);
 app.use("/dashboard", dashboardRoutes);
 app.use("/invites", inviteRoutes); // inviteRoutes default export olmalı
+app.use("/stripe", stripeRoutes);
 
 // Error handler (en sona konulmalı)
 app.use(errorHandler);

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import api from '../api/axios';
 import { useAuthStore } from '../store/authStore';
+import Pagination from '../components/Pagination';
 
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
@@ -60,14 +61,21 @@ export default function ProductsPage() {
   const [editCostPrice, setEditCostPrice] = useState('');
   const [editStock, setEditStock] = useState('');
   const [addLoading, setAddLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({ totalPages: 1, total: 0, hasNext: false, hasPrev: false });
+  const [search, setSearch] = useState('');
   const user = useAuthStore((s) => s.user);
   const isMainAdmin = user?.role === 'MAIN_ADMIN';
   const canEdit = user?.role === 'ADMIN' || user?.role === 'MAIN_ADMIN';
-  const isDemo = user?.role === 'DEMO';const fetchProducts = async () => {
-    
+  const isDemo = user?.role === 'DEMO';
+
+  const fetchProducts = async (p = page) => {
     try {
-      const res = await api.get('/products');
-      setProducts(res.data);
+      const params: any = { page: p, limit: 20 };
+      if (search) params.search = search;
+      const res = await api.get('/products', { params });
+      setProducts(res.data.data);
+      setPagination(res.data.pagination);
     } catch {
       setFormError('Ürünler yüklenemedi.');
     } finally {
@@ -86,6 +94,10 @@ export default function ProductsPage() {
     fetchProducts();
     if (isMainAdmin) fetchBusinesses();
   }, []);
+
+  useEffect(() => {
+    fetchProducts(page);
+  }, [page]);
 
   const handleAdd = async () => {
     if (!name.trim()) { setFormError('Ürün adı zorunludur.'); return; }
@@ -106,7 +118,8 @@ export default function ProductsPage() {
       await api.post('/products', payload);
       setName(''); setPrice(''); setCostPrice(''); setStock(''); setSelectedBusinessId('');
       setFormSuccess('Ürün eklendi.');
-      fetchProducts();
+      setPage(1);
+      fetchProducts(1);
     } catch (err: any) {
       setFormError(err?.response?.data?.message || 'Ürün eklenemedi.');
     } finally {
@@ -120,7 +133,7 @@ export default function ProductsPage() {
     try {
       await api.delete(`/products/${id}`);
       setFormSuccess('Ürün silindi.');
-      fetchProducts();
+      fetchProducts(page);
     } catch (err: any) {
       setFormError(err?.response?.data?.message || 'Ürün silinemedi.');
     }
@@ -145,7 +158,7 @@ export default function ProductsPage() {
       });
       setEditingId(null);
       setFormSuccess('Ürün güncellendi.');
-      fetchProducts();
+      fetchProducts(page);
     } catch (err: any) {
       setFormError(err?.response?.data?.message || 'Ürün güncellenemedi.');
     }
@@ -159,7 +172,17 @@ export default function ProductsPage() {
       <div className="pp">
         <div className="pp-header">
           <div className="pp-title">Ürünler</div>
-          <div style={{ fontSize: 13, color: '#94a3b8', fontWeight: 600 }}>{products.length} ürün</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <input
+              className="pp-input"
+              style={{ width: 200 }}
+              placeholder="Ürün ara..."
+              value={search}
+              onChange={e => { setSearch(e.target.value); setPage(1); }}
+              onKeyDown={e => e.key === 'Enter' && fetchProducts(1)}
+            />
+            <div style={{ fontSize: 13, color: '#94a3b8', fontWeight: 600 }}>{pagination.total} ürün</div>
+          </div>
         </div>
 
         {formError && <div className="pp-error">{formError}</div>}
@@ -282,6 +305,15 @@ export default function ProductsPage() {
             </table>
           )}
         </div>
+
+        <Pagination
+          page={page}
+          totalPages={pagination.totalPages}
+          total={pagination.total}
+          hasNext={pagination.hasNext}
+          hasPrev={pagination.hasPrev}
+          onPageChange={setPage}
+        />
       </div>
     </>
   );

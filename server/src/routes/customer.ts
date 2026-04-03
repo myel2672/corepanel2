@@ -3,42 +3,53 @@ import { authenticate, requireBusinessUser, AuthRequest } from "../middleware/au
 import { staffGuard } from "../middleware/staffGuard";
 import { validate } from "../middleware/validate";
 import { createCustomerSchema } from "../schemas/order.schema";
+import { paginate, paginateResponse, PaginatedRequest } from "../middleware/pagination";
+import { checkUsageLimit } from "../middleware/usageLimit";
+import { auditLog } from "../middleware/auditLog";
 import prisma from "../prisma";
 
 const router = Router();
 router.use(authenticate);
 router.use(requireBusinessUser);
 
-const staffGuard = (req: any, res: any, next: any) => {
-  if (req.user.role === "STAFF" || req.user.role === "DEMO") {
-    return res.status(403).json({ message: "Personel bu işlemi yapamaz" });
-  }
-  next();
-};
-
-router.get("/", async (req: AuthRequest, res: Response) => {
+router.get("/", paginate(), async (req: PaginatedRequest, res: Response) => {
   try {
     const user = req.user as any;
-    const where: any = {};
+    const where: any = { deletedAt: null };
     if (user.role !== "MAIN_ADMIN") where.businessId = Number(user.businessId);
-    const customers = await prisma.customer.findMany({
-      where,
-      include: {
-        orders: {
-          include: { product: true },
-          orderBy: { createdAt: "desc" },
-          take: 5,
+
+    if (req.pagination.search) {
+      where.OR = [
+        { name: { contains: req.pagination.search, mode: "insensitive" as any } },
+        { email: { contains: req.pagination.search, mode: "insensitive" as any } },
+        { phone: { contains: req.pagination.search, mode: "insensitive" as any } },
+      ];
+    }
+
+    const [customers, total] = await Promise.all([
+      prisma.customer.findMany({
+        where,
+        include: {
+          orders: {
+            include: { product: true },
+            orderBy: { createdAt: "desc" },
+            take: 5,
+          },
         },
-      },
-      orderBy: { createdAt: "desc" },
-    });
-    res.json(customers);
+        orderBy: { [req.pagination.sortBy]: req.pagination.sortOrder },
+        skip: req.pagination.skip,
+        take: req.pagination.limit,
+      }),
+      prisma.customer.count({ where }),
+    ]);
+
+    return paginateResponse(res, customers, total, req.pagination.page, req.pagination.limit);
   } catch {
     res.status(500).json({ error: "Müşteriler alınamadı" });
   }
 });
 
-router.post("/", staffGuard, async (req: AuthRequest, res: Response) => {
+router.post("/", staffGuard, checkUsageLimit("customers"), validate(createCustomerSchema), auditLog("customer"), async (req: AuthRequest, res: Response) => {
   try {
     const user = req.user as any;
     const { name, phone, email, address } = req.body;
@@ -54,11 +65,11 @@ router.post("/", staffGuard, async (req: AuthRequest, res: Response) => {
   }
 });
 
-router.put("/:id", staffGuard, async (req: AuthRequest, res: Response) => {
+router.put("/:id", staffGuard, auditLog("customer"), async (req: AuthRequest, res: Response) => {
   try {
     const user = req.user as any;
     const { name, phone, email, address } = req.body;
-    const where: any = { id: Number(req.params.id) };
+    const where: any = { id: Number(req.params.id), deletedAt: null };
     if (user.role !== "MAIN_ADMIN") where.businessId = Number(user.businessId);
     const existing = await prisma.customer.findFirst({ where });
     if (!existing) return res.status(404).json({ error: "Müşteri bulunamadı" });
@@ -72,21 +83,24 @@ router.put("/:id", staffGuard, async (req: AuthRequest, res: Response) => {
   }
 });
 
-router.delete("/:id", staffGuard, async (req: AuthRequest, res: Response) => {
+router.delete("/:id", staffGuard, auditLog("customer"), async (req: AuthRequest, res: Response) => {
   try {
     const user = req.user as any;
-    const where: any = { id: Number(req.params.id) };
+    const where: any = { id: Number(req.params.id), deletedAt: null };
     if (user.role !== "MAIN_ADMIN") where.businessId = Number(user.businessId);
     const existing = await prisma.customer.findFirst({ where });
     if (!existing) return res.status(404).json({ error: "Müşteri bulunamadı" });
 
-    // İlişkili siparişlerdeki customerId'yi null yap, sonra müşteriyi sil
     await prisma.order.updateMany({
       where: { customerId: Number(req.params.id) },
       data: { customerId: null },
     });
 
-    await prisma.customer.delete({ where: { id: Number(req.params.id) } });
+    await prisma.customer.update({
+      where: { id: Number(req.params.id) },
+      data: { deletedAt: new Date() },
+    });
+
     res.json({ message: "Müşteri silindi" });
   } catch (err) {
     console.error(err);

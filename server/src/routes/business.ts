@@ -2,6 +2,7 @@ import { Router } from "express";
 import { authenticate } from "../middleware/auth";
 import { seedDemoData } from "../services/demoSeed";
 import prisma from "../prisma";
+import { getUsageInfo } from "../middleware/usageLimit";
 
 const router = Router();
 
@@ -129,6 +130,7 @@ router.get("/", async (req: any, res) => {
 });
 
 // GET /businesses/me - own business profile
+// GET /businesses/me - own business profile
 router.get("/me", async (req: any, res) => {
   try {
     const user = req.user;
@@ -152,7 +154,9 @@ router.get("/me", async (req: any, res) => {
   }
 });
 
-// GET /businesses/me/users - business users
+// GET /businesses/me/usage - plan usage info
+router.get("/me/usage", authenticate, getUsageInfo);
+
 router.get("/me/users", async (req: any, res) => {
   try {
     const user = req.user;

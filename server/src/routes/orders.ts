@@ -2,29 +2,39 @@ import { Router } from "express"
 import { authenticate, requireAdmin, requireBusinessUser, requireNotDemo, AuthRequest } from "../middleware/auth"
 import { validate } from "../middleware/validate"
 import { createOrderSchema, updateOrderStatusSchema } from "../schemas/order.schema"
+import { paginate, paginateResponse, PaginatedRequest } from "../middleware/pagination"
+import { checkUsageLimit } from "../middleware/usageLimit"
+import { auditLog } from "../middleware/auditLog"
 import prisma from "../prisma"
 
 const router = Router()
 router.use(authenticate)
 router.use(requireBusinessUser)
 
-router.get("/", async (req: AuthRequest, res) => {
+router.get("/", paginate(), async (req: PaginatedRequest, res) => {
   try {
     const user = req.user as any
     const where: any = {}
     if (user.role !== "MAIN_ADMIN") where.businessId = Number(user.businessId)
-    const orders = await prisma.order.findMany({
-      where,
-      include: { product: true, customer: true },
-      orderBy: { createdAt: "desc" },
-    })
-    res.json(orders)
+
+    const [orders, total] = await Promise.all([
+      prisma.order.findMany({
+        where,
+        include: { product: true, customer: true },
+        orderBy: { [req.pagination.sortBy]: req.pagination.sortOrder },
+        skip: req.pagination.skip,
+        take: req.pagination.limit,
+      }),
+      prisma.order.count({ where }),
+    ])
+
+    return paginateResponse(res, orders, total, req.pagination.page, req.pagination.limit)
   } catch (err) {
     res.status(500).json({ message: "Siparişler yüklenemedi" })
   }
 })
 
-router.post("/", requireNotDemo, validate(createOrderSchema), async (req: AuthRequest, res) => {
+router.post("/", requireNotDemo, checkUsageLimit("orders"), validate(createOrderSchema), auditLog("order"), async (req: AuthRequest, res) => {
   try {
     const user = req.user as any
     const { productId, quantity, customerId } = req.body
@@ -59,7 +69,7 @@ router.post("/", requireNotDemo, validate(createOrderSchema), async (req: AuthRe
   }
 })
 
-router.put("/:id/status", requireNotDemo, validate(updateOrderStatusSchema), async (req: AuthRequest, res) => {
+router.put("/:id/status", requireNotDemo, validate(updateOrderStatusSchema), auditLog("order"), async (req: AuthRequest, res) => {
   try {
     const user = req.user as any
     const { status } = req.body
@@ -78,7 +88,7 @@ router.put("/:id/status", requireNotDemo, validate(updateOrderStatusSchema), asy
   }
 })
 
-router.delete("/:id", requireNotDemo, async (req: AuthRequest, res) => {
+router.delete("/:id", requireNotDemo, auditLog("order"), async (req: AuthRequest, res) => {
   try {
     const user = req.user as any
     const order = await prisma.order.findUnique({ where: { id: Number(req.params.id) } })
@@ -93,6 +103,3 @@ router.delete("/:id", requireNotDemo, async (req: AuthRequest, res) => {
 })
 
 export default router
-
-
-

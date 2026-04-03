@@ -17,6 +17,7 @@ import ResetPassword from './pages/ResetPassword';
 import VerifyEmail from './pages/VerifyEmail';
 import LandingPage from './pages/LandingPage';
 import AccountPage from './pages/AccountPage';
+import BillingPage from './pages/BillingPage';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const token = useAuthStore((s) => s.token);
@@ -48,6 +49,7 @@ function App() {
           <Route path="/business" element={<BusinessPanel />} />
           <Route path="/customers" element={<BusinessDataRoute><CustomersPage /></BusinessDataRoute>} />
           <Route path="/reports" element={<BusinessDataRoute><ReportsPage /></BusinessDataRoute>} />
+          <Route path="/billing" element={<BusinessDataRoute><BillingPage /></BusinessDataRoute>} />
           <Route path="/account" element={<AccountPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/login" />} />

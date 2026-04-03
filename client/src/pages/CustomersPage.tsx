@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { useAuthStore } from '../store/authStore';
+import Pagination from '../components/Pagination';
 
 interface Customer {
   id: number;
@@ -94,18 +95,24 @@ export default function CustomersPage() {
   const [form, setForm] = useState({ name: '', phone: '', email: '', address: '' });
   const [search, setSearch] = useState('');
   const [error, setError] = useState('');
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({ totalPages: 1, total: 0, hasNext: false, hasPrev: false });
   const user = useAuthStore((s) => s.user);
   const isDemo = user?.role === 'DEMO';
 
-  const fetchCustomers = async () => {
+  const fetchCustomers = async (p = page) => {
     try {
-      const res = await api.get('/customers');
-      setCustomers(res.data);
+      const params: any = { page: p, limit: 20 };
+      if (search) params.search = search;
+      const res = await api.get('/customers', { params });
+      setCustomers(res.data.data);
+      setPagination(res.data.pagination);
     } catch { setError('Müşteriler yüklenemedi'); }
     finally { setLoading(false); }
   };
 
   useEffect(() => { fetchCustomers(); }, []);
+  useEffect(() => { fetchCustomers(page); }, [page]);
 
   const handleSubmit = async () => {
     if (!form.name) { setError('İsim zorunludur'); return; }
@@ -230,6 +237,15 @@ export default function CustomersPage() {
             </table>
           )}
         </div>
+
+        <Pagination
+          page={page}
+          totalPages={pagination.totalPages}
+          total={pagination.total}
+          hasNext={pagination.hasNext}
+          hasPrev={pagination.hasPrev}
+          onPageChange={setPage}
+        />
       </div>
 
       {/* DETAY MODAL */}

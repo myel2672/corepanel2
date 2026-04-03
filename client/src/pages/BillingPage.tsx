@@ -6,6 +6,7 @@ interface UsageInfo {
   status: string;
   trialEndsAt: string | null;
   nextBillingDate: string | null;
+  cancelAtPeriodEnd?: boolean;
   limits: {
     maxProducts: number;
     maxOrders: number;
@@ -58,7 +59,7 @@ export default function BillingPage() {
     setProcessing(true);
     setMessage('');
     try {
-      const priceId = plan === 'Pro' ? process.env.VITE_STRIPE_PRO_PRICE_ID : '';
+      const priceId = plan === 'Pro' ? (import.meta as any).env.VITE_STRIPE_PRO_PRICE_ID : '';
       if (!priceId) {
         setMessage('Bu plan için ödeme henüz yapılandırılmadı');
         setProcessing(false);

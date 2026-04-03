@@ -86,7 +86,7 @@ export default function ProductsPage() {
   const fetchBusinesses = async () => {
     try {
       const res = await api.get('/businesses');
-      setBusinesses(res.data);
+      setBusinesses(res.data.data || res.data);
     } catch { console.error('İşletmeler yüklenemedi'); }
   };
 

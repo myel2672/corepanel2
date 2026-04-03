@@ -116,11 +116,11 @@ export default function OrdersPage() {
   };
 
   const fetchProducts = async () => {
-    try { const res = await api.get('/products'); setProducts(res.data); } catch {}
+    try { const res = await api.get('/products'); setProducts(res.data.data || res.data); } catch {}
   };
 
   const fetchCustomers = async () => {
-    try { const res = await api.get('/customers'); setCustomers(res.data); } catch {}
+    try { const res = await api.get('/customers'); setCustomers(res.data.data || res.data); } catch {}
   };
 
   const fetchBusiness = async () => {

@@ -498,10 +498,10 @@ export default function BusinessPanel() {
         api.get('/products'),
       ]);
       setMe(meRes.data);
-      setSales(salesRes.data || []);
+      setSales(salesRes.data?.data || salesRes.data || []);
       setSummary(summaryRes.data);
       const map: Record<string, string> = {};
-      (prodRes.data || []).forEach((x: any) => { map[x.id] = x.name; });
+      (prodRes.data?.data || prodRes.data || []).forEach((x: any) => { map[x.id] = x.name; });
       setProductsMap(map);
     } catch (err) { console.error(err); }
     finally { setLoading(false); }

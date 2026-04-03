@@ -6,6 +6,7 @@ import { createProductSchema } from "../schemas/order.schema";
 import { paginate, paginateResponse, PaginatedRequest } from "../middleware/pagination";
 import { checkUsageLimit } from "../middleware/usageLimit";
 import { auditLog } from "../middleware/auditLog";
+import { notifyLowStock } from "../utils/notifications";
 import prisma from "../prisma";
 
 const router = Router();
@@ -102,6 +103,11 @@ router.put("/:id", staffGuard, auditLog("product"), async (req: any, res) => {
         stock: Number(stock),
       },
     });
+
+    if (updated.stock < 10 && updated.businessId) {
+      await notifyLowStock(updated.businessId, updated.name, updated.stock);
+    }
+
     res.json(updated);
   } catch (error) {
     console.error(error);

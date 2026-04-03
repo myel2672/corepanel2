@@ -153,3 +153,15 @@ model AuditLog {
   createdAt   DateTime @default(now())
   business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 }
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  businessId Int
+  userId    Int
+  title     String
+  message   String   @db.Text
+  type      String   @default("info")
+  read      Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+}

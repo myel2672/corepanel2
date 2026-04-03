@@ -5,6 +5,7 @@ import { createOrderSchema, updateOrderStatusSchema } from "../schemas/order.sch
 import { paginate, paginateResponse, PaginatedRequest } from "../middleware/pagination"
 import { checkUsageLimit } from "../middleware/usageLimit"
 import { auditLog } from "../middleware/auditLog"
+import { notifyNewOrder } from "../utils/notifications"
 import prisma from "../prisma"
 
 const router = Router()
@@ -62,6 +63,11 @@ router.post("/", requireNotDemo, checkUsageLimit("orders"), validate(createOrder
       where: { id: Number(productId) },
       data: { stock: { decrement: Number(quantity) } },
     })
+
+    const updatedProduct = await prisma.product.findUnique({ where: { id: Number(productId) } });
+    if (updatedProduct && updatedProduct.stock < 10) {
+      await notifyNewOrder(businessId, order.id, product.name);
+    }
 
     res.json(order)
   } catch (err: any) {

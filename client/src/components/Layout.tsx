@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import NotificationBell from './NotificationBell';
 
 type NavItem = {
   to: string;
@@ -306,14 +307,17 @@ export default function Layout() {
 
       <div className="mobile-topbar">
         <div className="mobile-logo">Corepanel</div>
-        <button
-          className={`hamburger${sidebarOpen ? ' open' : ''}`}
-          onClick={() => setSidebarOpen((current) => !current)}
-        >
-          <span />
-          <span />
-          <span />
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <NotificationBell />
+          <button
+            className={`hamburger${sidebarOpen ? ' open' : ''}`}
+            onClick={() => setSidebarOpen((current) => !current)}
+          >
+            <span />
+            <span />
+            <span />
+          </button>
+        </div>
       </div>
 
       <div className={`sidebar-overlay${sidebarOpen ? ' visible' : ''}`} onClick={closeSidebar} />
@@ -358,6 +362,9 @@ export default function Layout() {
           </nav>
 
           <div className="sidebar-footer">
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10, padding: '0 4px' }}>
+              <NotificationBell />
+            </div>
             <div className="user-card">
               <div className="user-avatar">{initials}</div>
               <div className="user-info">

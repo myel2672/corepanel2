@@ -64,44 +64,46 @@ const getUsageCount = async (businessId: number, entity: string) => {
   }
 };
 
-export const checkUsageLimit = async (entity: "products" | "orders" | "customers" | "users") => {
-  return async (req: AuthRequest, res: Response, next: NextFunction) => {
-    try {
-      const user = req.user;
-      if (!user?.businessId || user.role === "MAIN_ADMIN" || user.role === "DEMO") {
-        return next();
-      }
+export const checkUsageLimit = (entity: "products" | "orders" | "customers" | "users") => {
+  return (req: AuthRequest, res: Response, next: NextFunction) => {
+    (async () => {
+      try {
+        const user = req.user;
+        if (!user?.businessId || user.role === "MAIN_ADMIN" || user.role === "DEMO") {
+          return next();
+        }
 
-      const business = await prisma.business.findUnique({
-        where: { id: Number(user.businessId) },
-        select: { planName: true },
-      });
-
-      if (!business) return res.status(404).json({ message: "İşletme bulunamadı" });
-
-      const limits = PLAN_LIMITS[business.planName];
-      if (!limits) return next();
-
-      const limitKey = `max${entity.charAt(0).toUpperCase() + entity.slice(1)}` as keyof PlanLimits;
-      const max = limits[limitKey] as number;
-
-      if (max === -1) return next();
-
-      const current = await getUsageCount(Number(user.businessId), entity);
-      if (current >= max) {
-        return res.status(403).json({
-          message: `${entity} limitine ulaşıldı (${current}/${max}). Plan yükseltin.`,
-          current,
-          limit: max,
-          plan: business.planName,
+        const business = await prisma.business.findUnique({
+          where: { id: Number(user.businessId) },
+          select: { planName: true },
         });
-      }
 
-      next();
-    } catch (err) {
-      console.error("Usage limit check error:", err);
-      next();
-    }
+        if (!business) return res.status(404).json({ message: "İşletme bulunamadı" });
+
+        const limits = PLAN_LIMITS[business.planName];
+        if (!limits) return next();
+
+        const limitKey = `max${entity.charAt(0).toUpperCase() + entity.slice(1)}` as keyof PlanLimits;
+        const max = limits[limitKey] as number;
+
+        if (max === -1) return next();
+
+        const current = await getUsageCount(Number(user.businessId), entity);
+        if (current >= max) {
+          return res.status(403).json({
+            message: `${entity} limitine ulaşıldı (${current}/${max}). Plan yükseltin.`,
+            current,
+            limit: max,
+            plan: business.planName,
+          });
+        }
+
+        next();
+      } catch (err) {
+        console.error("Usage limit check error:", err);
+        next();
+      }
+    })();
   };
 };
 

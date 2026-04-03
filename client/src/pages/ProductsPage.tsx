@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import api from '../api/axios';
 import { useAuthStore } from '../store/authStore';
 import Pagination from '../components/Pagination';
@@ -64,10 +64,30 @@ export default function ProductsPage() {
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({ totalPages: 1, total: 0, hasNext: false, hasPrev: false });
   const [search, setSearch] = useState('');
+  const [importLoading, setImportLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const user = useAuthStore((s) => s.user);
   const isMainAdmin = user?.role === 'MAIN_ADMIN';
   const canEdit = user?.role === 'ADMIN' || user?.role === 'MAIN_ADMIN';
   const isDemo = user?.role === 'DEMO';
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImportLoading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const { data } = await api.post('/products/import', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      setFormSuccess(`${data.count} ürün içe aktarıldı`);
+      fetchProducts(1);
+    } catch (err: any) {
+      setFormError(err?.response?.data?.message || 'İçe aktarma başarısız');
+    } finally {
+      setImportLoading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
 
   const fetchProducts = async (p = page) => {
     try {
@@ -219,6 +239,21 @@ export default function ProductsPage() {
             </div>
             <button className="pp-btn" onClick={handleAdd} disabled={addLoading}>
               {addLoading ? 'Ekleniyor...' : '+ Ürün Ekle'}
+            </button>
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept=".csv"
+              style={{ display: 'none' }}
+              onChange={handleImport}
+            />
+            <button
+              className="pp-btn"
+              style={{ background: '#059669' }}
+              onClick={() => fileInputRef.current?.click()}
+              disabled={importLoading}
+            >
+              {importLoading ? 'İçe Aktarılıyor...' : '📥 CSV İçe Aktar'}
             </button>
           </div>
         )}

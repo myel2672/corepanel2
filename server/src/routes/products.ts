@@ -10,9 +10,59 @@ import { notifyLowStock } from "../utils/notifications";
 import prisma from "../prisma";
 
 const router = Router();
-
 router.use(authenticate);
 router.use(requireBusinessUser);
+
+// CSV Import endpoint
+router.post("/import", staffGuard, async (req: any, res) => {
+  try {
+    const multer = require("multer");
+    const upload = multer({ storage: multer.memoryStorage() });
+    const uploadMiddleware = upload.single("file");
+    
+    uploadMiddleware(req, res, async (err: any) => {
+      if (err) return res.status(400).json({ message: "Dosya yüklenemedi" });
+      if (!req.file) return res.status(400).json({ message: "Dosya seçilmedi" });
+      
+      const XLSX = require("xlsx");
+      const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet);
+      
+      if (!rows.length) return res.status(400).json({ message: "Dosya boş" });
+      
+      const user = req.user;
+      const businessId = user.role === "MAIN_ADMIN" ? null : Number(user.businessId);
+      let count = 0;
+      
+      for (const row of rows as any[]) {
+        if (!row.name && !row.Name && !row.Ürün) continue;
+        const name = row.name || row.Name || row.Ürün;
+        const price = parseFloat(row.price || row.Price || row.Fiyat || 0);
+        const costPrice = parseFloat(row.costPrice || row.cost || row.Maliyet || 0);
+        const stock = parseInt(row.stock || row.Stok || 0);
+        
+        if (name && price > 0) {
+          await prisma.product.create({
+            data: {
+              name: String(name).substring(0, 255),
+              price,
+              costPrice: costPrice || null,
+              stock: isNaN(stock) ? 0 : stock,
+              businessId,
+            },
+          });
+          count++;
+        }
+      }
+      
+      res.json({ message: `${count} ürün içe aktarıldı`, count });
+    });
+  } catch (err) {
+    console.error("CSV import error:", err);
+    res.status(500).json({ message: "İçe aktarma başarısız" });
+  }
+});
 
 // GET PRODUCTS with pagination
 router.get("/", paginate(), async (req: PaginatedRequest, res) => {

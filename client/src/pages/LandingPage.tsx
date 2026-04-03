@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 export default function LandingPage() {
   const navigate = useNavigate();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <div style={{ background: '#0a0a0f', minHeight: '100vh' }}>
@@ -54,6 +56,18 @@ export default function LandingPage() {
           cursor: pointer; transition: all 0.2s; box-shadow: 0 0 20px rgba(99,102,241,0.3);
         }
         .nav-cta:hover { background: var(--indigo-dark); transform: translateY(-1px); }
+
+        /* HAMBURGER */
+        .hamburger { display: none; flex-direction: column; gap: 5px; background: none; border: none; cursor: pointer; padding: 4px; }
+        .hamburger-line { width: 24px; height: 2px; background: #fff; border-radius: 2px; transition: all 0.3s; }
+        .hamburger.open .hamburger-line:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+        .hamburger.open .hamburger-line:nth-child(2) { opacity: 0; }
+        .hamburger.open .hamburger-line:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+        .mobile-menu { display: none; position: absolute; top: 100%; left: 0; right: 0; background: rgba(10,10,15,0.95); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); padding: 16px 20px; flex-direction: column; gap: 12px; animation: slideDown 0.25s ease; }
+        .mobile-menu.open { display: flex; }
+        .mobile-menu .nav-link { font-size: 16px; padding: 8px 0; display: block; }
+        .mobile-menu .nav-cta { width: 100%; text-align: center; padding: 12px; border-radius: 12px; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
 
         /* HERO */
         .hero {
@@ -205,6 +219,7 @@ export default function LandingPage() {
         @media (max-width: 768px) {
           .nav { padding: 16px 20px; }
           .nav-links { display: none; }
+          .hamburger { display: flex; }
           .hero-stats { gap: 24px; flex-wrap: wrap; }
           .features-grid { grid-template-columns: 1fr; }
           .steps { grid-template-columns: 1fr 1fr; gap: 32px; }
@@ -215,13 +230,24 @@ export default function LandingPage() {
       `}</style>
 
       {/* NAVBAR */}
-      <nav className="nav">
+      <nav className="nav" style={{ position: 'fixed' }}>
         <div className="nav-logo">Corepanel<span /></div>
         <div className="nav-links">
           <a href="#features" className="nav-link">Özellikler</a>
           <a href="#how" className="nav-link">Nasıl Çalışır?</a>
           <a href="#pricing" className="nav-link">Fiyatlar</a>
           <button className="nav-cta" onClick={() => navigate('/login')}>Giriş Yap</button>
+        </div>
+        <button className="hamburger" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+          <span className="hamburger-line" />
+          <span className="hamburger-line" />
+          <span className="hamburger-line" />
+        </button>
+        <div className={`mobile-menu ${mobileMenuOpen ? 'open' : ''}`}>
+          <a href="#features" className="nav-link" onClick={() => setMobileMenuOpen(false)}>Özellikler</a>
+          <a href="#how" className="nav-link" onClick={() => setMobileMenuOpen(false)}>Nasıl Çalışır?</a>
+          <a href="#pricing" className="nav-link" onClick={() => setMobileMenuOpen(false)}>Fiyatlar</a>
+          <button className="nav-cta" onClick={() => { setMobileMenuOpen(false); navigate('/login'); }}>Giriş Yap</button>
         </div>
       </nav>
 

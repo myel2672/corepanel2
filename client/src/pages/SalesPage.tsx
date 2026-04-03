@@ -107,7 +107,7 @@ export default function SalesPage() {
   };
 
   const fetchProducts = async () => {
-    try { const r = await api.get('/products'); setProducts(r.data || []); } catch {}
+    try { const r = await api.get('/products'); setProducts(r.data.data || r.data || []); } catch {}
   };
 
   const fetchBusiness = async () => {

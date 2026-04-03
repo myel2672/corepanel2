@@ -1,23 +1,25 @@
+import { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
 import Layout from './components/Layout';
-import BusinessSignup from './pages/BusinessSignup';
-import LoginPage from './pages/LoginPage';
-import Dashboard from './pages/Dashboard';
-import OrdersPage from './pages/OrdersPage';
-import ProductsPage from './pages/ProductsPage';
-import ReportsPage from './pages/ReportsPage';
-import AcceptInvite from './pages/AcceptInvite';
-import SalesPage from './pages/SalesPage';
-import MainAdminDashboard from './pages/MainAdminDashboard';
-import BusinessPanel from './pages/BusinessPanel';
-import CustomersPage from './pages/CustomersPage';
-import ForgotPassword from './pages/ForgotPassword';
-import ResetPassword from './pages/ResetPassword';
-import VerifyEmail from './pages/VerifyEmail';
-import LandingPage from './pages/LandingPage';
-import AccountPage from './pages/AccountPage';
-import BillingPage from './pages/BillingPage';
+
+const LandingPage = lazy(() => import('./pages/LandingPage'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const BusinessSignup = lazy(() => import('./pages/BusinessSignup'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const OrdersPage = lazy(() => import('./pages/OrdersPage'));
+const ProductsPage = lazy(() => import('./pages/ProductsPage'));
+const ReportsPage = lazy(() => import('./pages/ReportsPage'));
+const AcceptInvite = lazy(() => import('./pages/AcceptInvite'));
+const SalesPage = lazy(() => import('./pages/SalesPage'));
+const MainAdminDashboard = lazy(() => import('./pages/MainAdminDashboard'));
+const BusinessPanel = lazy(() => import('./pages/BusinessPanel'));
+const CustomersPage = lazy(() => import('./pages/CustomersPage'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
+const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
+const AccountPage = lazy(() => import('./pages/AccountPage'));
+const BillingPage = lazy(() => import('./pages/BillingPage'));
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const token = useAuthStore((s) => s.token);
@@ -29,28 +31,39 @@ function BusinessDataRoute({ children }: { children: React.ReactNode }) {
   return user?.role === 'MAIN_ADMIN' ? <Navigate to="/admin" replace /> : <>{children}</>;
 }
 
+const PageLoader = () => (
+  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh' }}>
+    <div style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: '#6366f1', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />
+    <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+  </div>
+);
+
+const LazyPage = ({ children }: { children: React.ReactNode }) => (
+  <Suspense fallback={<PageLoader />}>{children}</Suspense>
+);
+
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<BusinessSignup />} />
-        <Route path="/accept-invite" element={<AcceptInvite />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/" element={<LazyPage><LandingPage /></LazyPage>} />
+        <Route path="/login" element={<LazyPage><LoginPage /></LazyPage>} />
+        <Route path="/register" element={<LazyPage><BusinessSignup /></LazyPage>} />
+        <Route path="/accept-invite" element={<LazyPage><AcceptInvite /></LazyPage>} />
+        <Route path="/forgot-password" element={<LazyPage><ForgotPassword /></LazyPage>} />
+        <Route path="/reset-password" element={<LazyPage><ResetPassword /></LazyPage>} />
+        <Route path="/verify-email" element={<LazyPage><VerifyEmail /></LazyPage>} />
         <Route element={<PrivateRoute><Layout /></PrivateRoute>}>
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/orders" element={<BusinessDataRoute><OrdersPage /></BusinessDataRoute>} />
-          <Route path="/products" element={<BusinessDataRoute><ProductsPage /></BusinessDataRoute>} />
-          <Route path="/sales" element={<BusinessDataRoute><SalesPage /></BusinessDataRoute>} />
-          <Route path="/admin" element={<MainAdminDashboard />} />
-          <Route path="/business" element={<BusinessPanel />} />
-          <Route path="/customers" element={<BusinessDataRoute><CustomersPage /></BusinessDataRoute>} />
-          <Route path="/reports" element={<BusinessDataRoute><ReportsPage /></BusinessDataRoute>} />
-          <Route path="/billing" element={<BusinessDataRoute><BillingPage /></BusinessDataRoute>} />
-          <Route path="/account" element={<AccountPage />} />
+          <Route path="/dashboard" element={<LazyPage><Dashboard /></LazyPage>} />
+          <Route path="/orders" element={<LazyPage><BusinessDataRoute><OrdersPage /></BusinessDataRoute></LazyPage>} />
+          <Route path="/products" element={<LazyPage><BusinessDataRoute><ProductsPage /></BusinessDataRoute></LazyPage>} />
+          <Route path="/sales" element={<LazyPage><BusinessDataRoute><SalesPage /></BusinessDataRoute></LazyPage>} />
+          <Route path="/admin" element={<LazyPage><MainAdminDashboard /></LazyPage>} />
+          <Route path="/business" element={<LazyPage><BusinessPanel /></LazyPage>} />
+          <Route path="/customers" element={<LazyPage><BusinessDataRoute><CustomersPage /></BusinessDataRoute></LazyPage>} />
+          <Route path="/reports" element={<LazyPage><BusinessDataRoute><ReportsPage /></BusinessDataRoute></LazyPage>} />
+          <Route path="/billing" element={<LazyPage><BusinessDataRoute><BillingPage /></BusinessDataRoute></LazyPage>} />
+          <Route path="/account" element={<LazyPage><AccountPage /></LazyPage>} />
         </Route>
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>

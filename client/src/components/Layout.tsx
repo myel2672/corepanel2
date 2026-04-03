@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import NotificationBell from './NotificationBell';
@@ -248,6 +248,7 @@ const styles = `
   .main-content::-webkit-scrollbar-track { background: transparent; }
   .main-content::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 3px; }
   .main-content::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+  @keyframes fadeInPage { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
   .topbar-right {
     position: sticky;
     top: 0;
@@ -285,6 +286,13 @@ export default function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [pageKey, setPageKey] = useState(location.pathname);
+
+  useEffect(() => {
+    if (location.pathname !== pageKey) {
+      setPageKey(location.pathname);
+    }
+  }, [location.pathname, pageKey]);
 
   const handleLogout = () => {
     logout();
@@ -385,7 +393,9 @@ export default function Layout() {
 
         <main className="main-content">
           <div className="topbar-right"><NotificationBell /></div>
-          <Outlet />
+          <div key={pageKey} style={{ animation: 'fadeInPage 0.2s ease' }}>
+            <Outlet />
+          </div>
         </main>
       </div>
     </>

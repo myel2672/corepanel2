@@ -2,10 +2,10 @@ import { Router } from "express";
 import { PrismaClient } from "@prisma/client";
 import { authenticate, AuthRequest } from "../middleware/auth";
 import XLSX from "xlsx";
+import prisma from "../prisma";
 
 
 const router = Router();
-const prisma = new PrismaClient();
 
 // Tarih aralığı yardımcısı
 const getDateRange = (startDate?: string, endDate?: string) => {
@@ -54,7 +54,8 @@ router.get('/summary', authenticate, async (req: AuthRequest, res) => {
 
     // Sipariş toplamları
     const orderRevenue = orders.reduce((a, o) => a + o.quantity * (o.product?.price || 0), 0);
-    const orderProfit = orderRevenue * 0.4;
+    const orderCost = orders.reduce((a, o) => a + o.quantity * (o.product?.costPrice || 0), 0);
+    const orderProfit = orderRevenue - orderCost;
 
     // Günlük grafik verisi
     const dailyMap: Record<string, { saleTotal: number; orderTotal: number }> = {};
@@ -153,6 +154,7 @@ router.get('/export', authenticate, async (req: AuthRequest, res) => {
       });
       orders.forEach(o => {
         const total = o.quantity * (o.product?.price || 0);
+        const cost = o.quantity * (o.product?.costPrice || 0);
         rows.push([
           'Sipariş',
           new Date(o.createdAt).toLocaleDateString('tr-TR'),
@@ -160,9 +162,9 @@ router.get('/export', authenticate, async (req: AuthRequest, res) => {
           o.customer?.name || '—',
           String(o.quantity),
           String(o.product?.price || 0),
-          '—',
+          String(o.product?.costPrice || 0),
           total.toFixed(2),
-          (total * 0.4).toFixed(2),
+          (total - cost).toFixed(2),
         ]);
       });
     }

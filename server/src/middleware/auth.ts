@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import { PrismaClient } from "@prisma/client";
+import prisma from "../prisma";
 
-const prisma = new PrismaClient();
-const JWT_SECRET = process.env.JWT_SECRET || "corepanel-secret";
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) throw new Error("JWT_SECRET environment variable is required");
 
 export const BUSINESS_APPROVAL_REQUIRED_MESSAGE =
   "Isletme onayi bekleniyor. MAIN_ADMIN onayi sonrasi giris yapabilirsiniz.";

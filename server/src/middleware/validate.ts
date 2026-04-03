@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { ZodSchema, ZodError, ZodIssue } from 'zod';
+import { ZodSchema } from 'zod';
 
 export const validate =
   (schema: ZodSchema) =>
@@ -7,13 +7,13 @@ export const validate =
     try {
       schema.parse(req.body);
       next();
-    } catch (error) {
-      if (error instanceof ZodError) {
+    } catch (error: any) {
+      if (error.issues && Array.isArray(error.issues)) {
         res.status(400).json({
           status: 'error',
           message: 'Validation hatası',
-          errors: error.issues.map((e: ZodIssue) => ({
-            field: e.path.join('.'),
+          errors: error.issues.map((e: any) => ({
+            field: e.path?.join('.') || 'unknown',
             message: e.message,
           })),
         });

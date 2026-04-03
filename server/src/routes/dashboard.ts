@@ -1,4 +1,4 @@
-﻿import express from "express";
+import express from "express";
 import { getSummary } from "../controllers/dashboardController";
 import { authenticate } from "../middleware/auth";
 

@@ -1,10 +1,9 @@
 import { Router } from "express";
-import { PrismaClient } from "@prisma/client";
 import { authenticate } from "../middleware/auth";
 import { seedDemoData } from "../services/demoSeed";
+import prisma from "../prisma";
 
 const router = Router();
-const prisma = new PrismaClient();
 
 const addDays = (days: number) => {
   const date = new Date();
@@ -35,7 +34,7 @@ const normalizeMoney = (value: unknown) => {
 // POST /businesses/register - public business signup
 router.post("/register", async (req: any, res) => {
   try {
-    const { name, sector, adminEmail, adminPassword } = req.body;
+    const { name, sector, adminEmail, adminPassword, adminName } = req.body;
 
     if (!name || !sector || !adminEmail || !adminPassword) {
       return res.status(400).json({ message: "Tum alanlar zorunludur" });
@@ -70,6 +69,7 @@ router.post("/register", async (req: any, res) => {
         password: hashedPassword,
         role: "ADMIN",
         businessId: business.id,
+        name: adminName || null,
       },
     });
 
@@ -230,6 +230,7 @@ router.post("/", async (req: any, res) => {
         password: hashedPassword,
         role: "ADMIN",
         businessId: business.id,
+        name: req.body.adminName || null,
       },
     });
 

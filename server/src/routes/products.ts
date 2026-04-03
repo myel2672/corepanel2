@@ -1,19 +1,14 @@
 import { Router } from "express";
-import { PrismaClient } from "@prisma/client";
 import { authenticate, requireBusinessUser } from "../middleware/auth";
+import { staffGuard } from "../middleware/staffGuard";
+import { validate } from "../middleware/validate";
+import { createProductSchema } from "../schemas/order.schema";
+import prisma from "../prisma";
 
 const router = Router();
-const prisma = new PrismaClient();
 
 router.use(authenticate);
 router.use(requireBusinessUser);
-
-const staffGuard = (req: any, res: any, next: any) => {
-  if (req.user.role === "STAFF" || req.user.role === "DEMO" || req.user.role === "DEMO") {
-    return res.status(403).json({ message: "Personel bu işlemi yapamaz" });
-  }
-  next();
-};
 
 // GET PRODUCTS
 router.get("/", async (req: any, res) => {
@@ -38,7 +33,7 @@ router.get("/", async (req: any, res) => {
 });
 
 // CREATE PRODUCT
-router.post("/", staffGuard, async (req: any, res) => {
+router.post("/", staffGuard, validate(createProductSchema), async (req: any, res) => {
   try {
     const user = req.user;
     const { name, description, price, costPrice, stock } = req.body;

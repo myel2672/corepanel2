@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
@@ -11,11 +10,11 @@ import {
   getBusinessApprovalBlock,
   requireNotDemo,
 } from "../middleware/auth";
+import prisma from "../prisma";
 
 const router = Router();
-const prisma = new PrismaClient();
 
-const JWT_SECRET = process.env.JWT_SECRET || "corepanel-secret";
+const JWT_SECRET = process.env.JWT_SECRET as string;
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || "corepanel-refresh-secret";
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "15m";
 const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || "7d";
@@ -58,8 +57,6 @@ const sendVerificationEmail = async (email: string, token: string) => {
 };
 
 const sendPasswordResetEmail = async (email: string, token: string) => {
-  console.log("📧 Mail gönderiliyor:", email);
-  console.log("📧 GMAIL_USER:", process.env.GMAIL_USER);
   const link = `${FRONTEND_URL}/reset-password?token=${token}`;
   try {
     const info = await transporter.sendMail({

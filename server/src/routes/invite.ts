@@ -1,12 +1,11 @@
 import { Router } from "express";
-import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
 import { authenticate } from "../middleware/auth";
+import prisma from "../prisma";
 
 const router = Router();
-const prisma = new PrismaClient();
 
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 

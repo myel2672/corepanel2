@@ -1,9 +1,10 @@
 import { Router } from "express"
-import { PrismaClient } from "@prisma/client"
 import { authenticate, requireAdmin, requireBusinessUser, requireNotDemo, AuthRequest } from "../middleware/auth"
+import { validate } from "../middleware/validate"
+import { createOrderSchema, updateOrderStatusSchema } from "../schemas/order.schema"
+import prisma from "../prisma"
 
 const router = Router()
-const prisma = new PrismaClient()
 router.use(authenticate)
 router.use(requireBusinessUser)
 
@@ -23,7 +24,7 @@ router.get("/", async (req: AuthRequest, res) => {
   }
 })
 
-router.post("/", requireNotDemo, async (req: AuthRequest, res) => {
+router.post("/", requireNotDemo, validate(createOrderSchema), async (req: AuthRequest, res) => {
   try {
     const user = req.user as any
     const { productId, quantity, customerId } = req.body
@@ -58,7 +59,7 @@ router.post("/", requireNotDemo, async (req: AuthRequest, res) => {
   }
 })
 
-router.put("/:id/status", requireNotDemo, async (req: AuthRequest, res) => {
+router.put("/:id/status", requireNotDemo, validate(updateOrderStatusSchema), async (req: AuthRequest, res) => {
   try {
     const user = req.user as any
     const { status } = req.body

@@ -1,15 +1,17 @@
-﻿import { Router, Response } from "express";
-import { PrismaClient } from "@prisma/client";
+import { Router, Response } from "express";
 import { authenticate, requireBusinessUser, AuthRequest } from "../middleware/auth";
+import { staffGuard } from "../middleware/staffGuard";
+import { validate } from "../middleware/validate";
+import { createCustomerSchema } from "../schemas/order.schema";
+import prisma from "../prisma";
 
 const router = Router();
-const prisma = new PrismaClient();
 router.use(authenticate);
 router.use(requireBusinessUser);
 
 const staffGuard = (req: any, res: any, next: any) => {
-  if (req.user.role === "STAFF" || req.user.role === "DEMO" || req.user.role === "DEMO") {
-    return res.status(403).json({ message: "Personel bu iÅŸlemi yapamaz" });
+  if (req.user.role === "STAFF" || req.user.role === "DEMO") {
+    return res.status(403).json({ message: "Personel bu işlemi yapamaz" });
   }
   next();
 };
@@ -32,7 +34,7 @@ router.get("/", async (req: AuthRequest, res: Response) => {
     });
     res.json(customers);
   } catch {
-    res.status(500).json({ error: "MÃ¼ÅŸteriler alÄ±namadÄ±" });
+    res.status(500).json({ error: "Müşteriler alınamadı" });
   }
 });
 
@@ -40,15 +42,15 @@ router.post("/", staffGuard, async (req: AuthRequest, res: Response) => {
   try {
     const user = req.user as any;
     const { name, phone, email, address } = req.body;
-    if (!name) return res.status(400).json({ error: "Ä°sim zorunludur" });
+    if (!name) return res.status(400).json({ error: "İsim zorunludur" });
     const businessId = user.role === "MAIN_ADMIN" ? Number(req.body.businessId) : Number(user.businessId);
-    if (!businessId) return res.status(403).json({ error: "Ä°ÅŸletme gerekli" });
+    if (!businessId) return res.status(403).json({ error: "İşletme gerekli" });
     const customer = await prisma.customer.create({
       data: { name, phone: phone || null, email: email || null, address: address || null, businessId },
     });
     res.status(201).json(customer);
   } catch {
-    res.status(500).json({ error: "MÃ¼ÅŸteri oluÅŸturulamadÄ±" });
+    res.status(500).json({ error: "Müşteri oluşturulamadı" });
   }
 });
 
@@ -59,14 +61,14 @@ router.put("/:id", staffGuard, async (req: AuthRequest, res: Response) => {
     const where: any = { id: Number(req.params.id) };
     if (user.role !== "MAIN_ADMIN") where.businessId = Number(user.businessId);
     const existing = await prisma.customer.findFirst({ where });
-    if (!existing) return res.status(404).json({ error: "MÃ¼ÅŸteri bulunamadÄ±" });
+    if (!existing) return res.status(404).json({ error: "Müşteri bulunamadı" });
     const customer = await prisma.customer.update({
       where: { id: Number(req.params.id) },
       data: { name, phone: phone || null, email: email || null, address: address || null },
     });
     res.json(customer);
   } catch {
-    res.status(500).json({ error: "MÃ¼ÅŸteri gÃ¼ncellenemedi" });
+    res.status(500).json({ error: "Müşteri güncellenemedi" });
   }
 });
 
@@ -76,22 +78,20 @@ router.delete("/:id", staffGuard, async (req: AuthRequest, res: Response) => {
     const where: any = { id: Number(req.params.id) };
     if (user.role !== "MAIN_ADMIN") where.businessId = Number(user.businessId);
     const existing = await prisma.customer.findFirst({ where });
-    if (!existing) return res.status(404).json({ error: "MÃ¼ÅŸteri bulunamadÄ±" });
+    if (!existing) return res.status(404).json({ error: "Müşteri bulunamadı" });
 
-    // Ä°liÅŸkili sipariÅŸlerdeki customerId'yi null yap, sonra mÃ¼ÅŸteriyi sil
+    // İlişkili siparişlerdeki customerId'yi null yap, sonra müşteriyi sil
     await prisma.order.updateMany({
       where: { customerId: Number(req.params.id) },
       data: { customerId: null },
     });
 
     await prisma.customer.delete({ where: { id: Number(req.params.id) } });
-    res.json({ message: "MÃ¼ÅŸteri silindi" });
+    res.json({ message: "Müşteri silindi" });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "MÃ¼ÅŸteri silinemedi" });
+    res.status(500).json({ error: "Müşteri silinemedi" });
   }
 });
 
 export default router;
-
-

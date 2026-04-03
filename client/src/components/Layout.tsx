@@ -248,7 +248,17 @@ const styles = `
   .main-content::-webkit-scrollbar-track { background: transparent; }
   .main-content::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 3px; }
   .main-content::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+  .topbar-right {
+    position: sticky;
+    top: 0;
+    right: 0;
+    display: flex;
+    justify-content: flex-end;
+    padding: 0 0 16px 0;
+    z-index: 10;
+  }
   @media (max-width: 768px) {
+    .topbar-right { display: none; }
     .mobile-topbar { display: flex; }
     .sidebar {
       position: fixed;
@@ -362,9 +372,6 @@ export default function Layout() {
           </nav>
 
           <div className="sidebar-footer">
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10, padding: '0 4px' }}>
-              <NotificationBell />
-            </div>
             <div className="user-card">
               <div className="user-avatar">{initials}</div>
               <div className="user-info">
@@ -377,6 +384,7 @@ export default function Layout() {
         </aside>
 
         <main className="main-content">
+          <div className="topbar-right"><NotificationBell /></div>
           <Outlet />
         </main>
       </div>

@@ -17,8 +17,8 @@ const navItems: NavItem[] = [
   { to: '/sales', label: 'Satışlar', icon: '$', roles: ['ADMIN', 'STAFF', 'DEMO'] },
   { to: '/customers', label: 'Müşteriler', icon: 'C', roles: ['ADMIN', 'DEMO'] },
   { to: '/reports', label: 'Raporlar', icon: 'R', roles: ['ADMIN', 'DEMO'] },
-  { to: '/billing', label: 'Faturalandırma', icon: '₺', roles: ['ADMIN'] },
-  { to: '/business', label: 'İşletme', icon: 'B', roles: ['ADMIN'] },
+  { to: '/billing', label: 'Faturalandırma', icon: '₺', roles: ['ADMIN', 'MAIN_ADMIN'] },
+  { to: '/business', label: 'İşletme', icon: 'B', roles: ['ADMIN', 'MAIN_ADMIN'] },
   { to: '/admin', label: 'İşletmeler', icon: '*', roles: ['MAIN_ADMIN'] },
   { to: '/account', label: 'Hesabım', icon: 'A', roles: ['MAIN_ADMIN', 'ADMIN', 'STAFF'] },
 ];

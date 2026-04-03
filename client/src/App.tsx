@@ -28,7 +28,7 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 
 function BusinessDataRoute({ children }: { children: React.ReactNode }) {
   const user = useAuthStore((s) => s.user);
-  return user?.role === 'MAIN_ADMIN' ? <Navigate to="/admin" replace /> : <>{children}</>;
+  return user?.role === 'MAIN_ADMIN' ? <>{children}</> : <>{children}</>;
 }
 
 const PageLoader = () => (

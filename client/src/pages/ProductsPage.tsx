@@ -97,7 +97,7 @@ export default function ProductsPage() {
       setProducts(res.data.data);
       setPagination(res.data.pagination);
     } catch {
-      setFormError('Ürünler yüklenemedi.');
+      console.error('Ürünler yüklenemedi.');
     } finally {
       setLoading(false);
     }
@@ -138,7 +138,6 @@ export default function ProductsPage() {
       await api.post('/products', payload);
       setName(''); setPrice(''); setCostPrice(''); setStock(''); setSelectedBusinessId('');
       setFormSuccess('Ürün eklendi.');
-      setPage(1);
       fetchProducts(1);
     } catch (err: any) {
       setFormError(err?.response?.data?.message || 'Ürün eklenemedi.');

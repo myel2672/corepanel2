@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { useNavigate, Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuthStore } from '../store/authStore';
 
-const APPROVAL_PENDING_MESSAGE = 'İşletme onayı bekleniyor. MAIN_ADMIN onayı sonrası giriş yapabilirsiniz.';
+const APPROVAL_PENDING_MESSAGE =
+  'İşletme onayı bekleniyor. MAIN_ADMIN onayı sonrası giriş yapabilirsiniz.';
 
 export default function LoginPage() {
   const [searchParams] = useSearchParams();
@@ -18,8 +19,14 @@ export default function LoginPage() {
   const approvalPending = searchParams.get('approvalPending') === 'true';
 
   const handleLogin = async () => {
-    if (!email || !password) { setError('E-posta ve şifre gereklidir.'); return; }
-    setLoading(true); setError('');
+    if (!email || !password) {
+      setError('E-posta ve şifre gereklidir.');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
     try {
       const res = await api.post('/auth/login', { email, password });
       setAuth(res.data.user, res.data.token, res.data.refreshToken);
@@ -28,7 +35,7 @@ export default function LoginPage() {
       if (err?.response?.status === 403) {
         setError(APPROVAL_PENDING_MESSAGE);
       } else {
-        setError(err?.response?.data?.message || 'Giris basarisiz.');
+        setError(err?.response?.data?.message || 'Giriş başarısız.');
       }
     } finally {
       setLoading(false);
@@ -36,7 +43,9 @@ export default function LoginPage() {
   };
 
   const handleDemo = async () => {
-    setDemoLoading(true); setError('');
+    setDemoLoading(true);
+    setError('');
+
     try {
       const res = await api.post('/auth/demo-login');
       setAuth(res.data.user, res.data.token, res.data.refreshToken);
@@ -45,7 +54,7 @@ export default function LoginPage() {
       if (err?.response?.status === 403) {
         setError(APPROVAL_PENDING_MESSAGE);
       } else {
-        setError(err?.response?.data?.message || 'Demo girisi basarisiz.');
+        setError(err?.response?.data?.message || 'Demo girişi başarısız.');
       }
     } finally {
       setDemoLoading(false);
@@ -55,340 +64,304 @@ export default function LoginPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; }
-
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        :root {
+          --login-bg: #07111f;
+          --login-card: rgba(9, 18, 32, 0.9);
+          --login-panel: rgba(255, 255, 255, 0.92);
+          --login-line: rgba(148, 163, 184, 0.18);
+          --login-text: #e2e8f0;
+          --login-muted: #94a3b8;
+          --login-title: #0f172a;
+          --login-primary: #4f46e5;
+          --login-accent: #14b8a6;
+        }
+        * { box-sizing: border-box; }
+        body {
+          margin: 0;
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          background:
+            radial-gradient(circle at top left, rgba(79,70,229,.22), transparent 32%),
+            linear-gradient(180deg, #07111f 0%, #0b1322 100%);
+        }
         .login-page {
           min-height: 100vh;
-          display: flex;
+          display: grid;
+          grid-template-columns: minmax(360px, 1.05fr) minmax(360px, 0.95fr);
         }
-
-        /* ── SOL PANEL ── */
         .login-left {
-          flex: 1;
-          background: linear-gradient(135deg, #6366f1 0%, #4f46e5 50%, #4338ca 100%);
+          padding: 44px clamp(28px, 5vw, 64px);
+          background:
+            radial-gradient(circle at top right, rgba(103,232,249,.14), transparent 28%),
+            linear-gradient(180deg, #08111f 0%, #0b1322 100%);
+          color: var(--login-text);
           display: flex;
           flex-direction: column;
           justify-content: space-between;
-          padding: 48px;
-          position: relative;
-          overflow: hidden;
         }
-        .login-left::before {
-          content: '';
-          position: absolute;
-          width: 500px; height: 500px;
-          border-radius: 50%;
-          background: rgba(255,255,255,0.06);
-          top: -200px; right: -200px;
-        }
-        .login-left::after {
-          content: '';
-          position: absolute;
-          width: 300px; height: 300px;
-          border-radius: 50%;
-          background: rgba(255,255,255,0.04);
-          bottom: -100px; left: -100px;
-        }
-        .login-left-logo {
-          font-size: 24px;
+        .login-brand {
+          display: inline-flex;
+          align-items: center;
+          gap: 10px;
+          font-family: 'Syne', sans-serif;
+          font-size: 32px;
           font-weight: 800;
-          color: #fff;
-          letter-spacing: -0.5px;
-          position: relative;
-          z-index: 1;
+          letter-spacing: -.06em;
+          color: #f8fafc;
         }
-        .login-left-logo span {
-          display: inline-block;
-          width: 8px; height: 8px;
-          background: #a5f3fc;
-          border-radius: 50%;
-          margin-left: 2px;
-          vertical-align: middle;
-          margin-bottom: 3px;
+        .login-brand-dot {
+          width: 10px;
+          height: 10px;
+          border-radius: 999px;
+          background: linear-gradient(135deg, #67e8f9, var(--login-accent));
         }
-        .login-left-content {
-          position: relative;
-          z-index: 1;
+        .login-copy {
+          max-width: 560px;
         }
-        .login-left-tag {
-          display: inline-block;
-          background: rgba(255,255,255,0.15);
-          border: 1px solid rgba(255,255,255,0.2);
-          color: #fff;
-          font-size: 11px;
+        .login-kicker {
+          display: inline-flex;
+          padding: 10px 16px;
+          border-radius: 999px;
+          margin-bottom: 22px;
+          background: rgba(79,70,229,.16);
+          border: 1px solid rgba(129,140,248,.24);
+          color: #c7d2fe;
+          font-size: 13px;
           font-weight: 700;
-          letter-spacing: 1.5px;
-          text-transform: uppercase;
-          padding: 6px 14px;
-          border-radius: 20px;
-          margin-bottom: 24px;
         }
-        .login-left-title {
-          font-size: 38px;
-          font-weight: 800;
-          color: #fff;
-          line-height: 1.15;
-          letter-spacing: -1px;
-          margin-bottom: 20px;
+        .login-copy h1 {
+          margin: 0 0 18px;
+          font-family: 'Syne', sans-serif;
+          font-size: clamp(46px, 7vw, 80px);
+          line-height: .98;
+          letter-spacing: -.08em;
+          color: #f8fafc;
         }
-        .login-left-title em {
-          font-style: normal;
-          color: #a5f3fc;
+        .login-copy h1 span {
+          background: linear-gradient(135deg, #93c5fd, #67e8f9 44%, #2dd4bf);
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
         }
-        .login-left-desc {
-          font-size: 15px;
-          color: rgba(255,255,255,0.7);
-          line-height: 1.7;
-          max-width: 380px;
-          font-weight: 400;
+        .login-copy p {
+          margin: 0;
+          color: #a8b6ca;
+          font-size: 18px;
+          line-height: 1.82;
         }
-        .login-left-features {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-          position: relative;
-          z-index: 1;
+        .login-points {
+          display: grid;
+          gap: 14px;
+          margin-top: 34px;
+          max-width: 520px;
         }
-        .login-left-feature {
+        .login-point {
           display: flex;
           align-items: center;
           gap: 12px;
-          color: rgba(255,255,255,0.8);
-          font-size: 13px;
-          font-weight: 500;
+          color: #d7e3f3;
+          font-size: 15px;
+          font-weight: 600;
         }
-        .login-left-feature-dot {
-          width: 6px; height: 6px;
-          border-radius: 50%;
-          background: #a5f3fc;
-          flex-shrink: 0;
+        .login-point-dot {
+          width: 10px;
+          height: 10px;
+          border-radius: 999px;
+          background: rgba(20,184,166,.94);
+          box-shadow: 0 0 12px rgba(20,184,166,.45);
         }
-
-        /* ── SAĞ PANEL ── */
         .login-right {
-          width: 480px;
-          min-width: 480px;
-          background: #fff;
           display: flex;
-          flex-direction: column;
           align-items: center;
           justify-content: center;
-          padding: 48px;
+          padding: 36px 24px;
+          background:
+            linear-gradient(180deg, rgba(248,250,252,.96), rgba(255,255,255,.92));
         }
-        .login-form-wrap {
-          width: 100%;
-          max-width: 360px;
+        .login-card {
+          width: min(430px, 100%);
+          padding: 32px;
+          border-radius: 30px;
+          background: var(--login-panel);
+          border: 1px solid rgba(148, 163, 184, 0.16);
+          box-shadow: 0 24px 70px rgba(15, 23, 42, 0.12);
         }
-        .login-form-title {
-          font-size: 26px;
-          font-weight: 800;
-          color: #0f172a;
-          letter-spacing: -0.6px;
-          margin-bottom: 6px;
+        .login-card h2 {
+          margin: 0 0 8px;
+          color: var(--login-title);
+          font-size: 40px;
+          font-family: 'Syne', sans-serif;
+          letter-spacing: -.06em;
+          line-height: .98;
         }
-        .login-form-subtitle {
+        .login-card p {
+          margin: 0 0 24px;
+          color: #64748b;
+          line-height: 1.72;
+        }
+        .login-alert {
+          padding: 14px 16px;
+          border-radius: 16px;
+          margin-bottom: 18px;
           font-size: 14px;
-          color: #94a3b8;
-          margin-bottom: 36px;
-          font-weight: 500;
+          font-weight: 600;
+          line-height: 1.6;
+        }
+        .login-alert.error {
+          background: #fef2f2;
+          border: 1px solid #fecaca;
+          color: #dc2626;
+        }
+        .login-alert.success {
+          background: #ecfdf5;
+          border: 1px solid #a7f3d0;
+          color: #059669;
         }
         .login-label {
           display: block;
-          font-size: 11px;
-          font-weight: 700;
-          color: #94a3b8;
-          letter-spacing: 0.8px;
-          text-transform: uppercase;
           margin-bottom: 8px;
+          color: #64748b;
+          font-size: 12px;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: .08em;
         }
         .login-input {
           width: 100%;
-          padding: 12px 16px;
+          padding: 15px 16px;
+          border-radius: 16px;
+          border: 1px solid #dbe4ef;
           background: #f8fafc;
-          border: 1.5px solid #e2e8f0;
-          border-radius: 12px;
-          color: #1e293b;
-          font-size: 14px;
-          font-family: 'Plus Jakarta Sans', sans-serif;
-          font-weight: 500;
-          outline: none;
-          transition: all 0.15s;
-          margin-bottom: 18px;
-        }
-        .login-input:focus {
-          border-color: #6366f1;
-          background: #fff;
-          box-shadow: 0 0 0 3px rgba(99,102,241,0.08);
-        }
-        .login-input::placeholder { color: #cbd5e1; }
-        .login-btn {
-          width: 100%;
-          padding: 13px;
-          background: #6366f1;
-          border: none;
-          border-radius: 12px;
-          color: #fff;
-          font-size: 15px;
-          font-weight: 700;
-          font-family: 'Plus Jakarta Sans', sans-serif;
-          cursor: pointer;
-          transition: all 0.15s;
-          margin-top: 4px;
-          box-shadow: 0 4px 14px rgba(99,102,241,0.3);
-        }
-        .login-btn:hover:not(:disabled) {
-          background: #4f46e5;
-          transform: translateY(-1px);
-          box-shadow: 0 6px 20px rgba(99,102,241,0.4);
-        }
-        .login-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-        .login-demo-btn {
-          width: 100%;
-          padding: 13px;
-          background: #fff;
-          border: 1.5px solid #e2e8f0;
-          border-radius: 12px;
           color: #0f172a;
           font-size: 15px;
-          font-weight: 700;
-          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-family: inherit;
+          margin-bottom: 16px;
+          outline: none;
+          transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
+        }
+        .login-input:focus {
+          background: #fff;
+          border-color: #818cf8;
+          box-shadow: 0 0 0 4px rgba(79,70,229,.08);
+        }
+        .login-btn, .login-demo-btn {
+          width: 100%;
+          border-radius: 16px;
+          padding: 15px 18px;
+          font-family: inherit;
+          font-size: 15px;
+          font-weight: 800;
           cursor: pointer;
-          transition: all 0.15s;
+          transition: transform .18s ease, box-shadow .18s ease;
+        }
+        .login-btn {
+          border: none;
+          color: #fff;
+          background: linear-gradient(135deg, var(--login-primary), #6366f1 58%, var(--login-accent) 150%);
+          box-shadow: 0 18px 34px rgba(79,70,229,.28);
+        }
+        .login-demo-btn {
           margin-top: 10px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
+          border: 1px solid #dbe4ef;
+          background: #fff;
+          color: #0f172a;
         }
-        .login-demo-btn:hover:not(:disabled) {
-          border-color: #6366f1;
-          color: #6366f1;
-          transform: translateY(-1px);
-        }
-        .login-demo-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .login-btn:hover, .login-demo-btn:hover { transform: translateY(-1px); }
+        .login-btn:disabled, .login-demo-btn:disabled { opacity: .65; cursor: not-allowed; transform: none; }
         .login-divider {
           display: flex;
           align-items: center;
           gap: 12px;
           margin: 16px 0;
-          color: #cbd5e1;
+          color: #94a3b8;
           font-size: 12px;
-          font-weight: 600;
+          font-weight: 700;
         }
-        .login-divider::before,
-        .login-divider::after {
+        .login-divider::before, .login-divider::after {
           content: '';
-          flex: 1;
           height: 1px;
+          flex: 1;
           background: #e2e8f0;
         }
-        .login-error {
-          background: #fef2f2;
-          border: 1px solid #fecaca;
-          color: #dc2626;
-          padding: 12px 16px;
-          border-radius: 10px;
-          font-size: 13px;
-          font-weight: 600;
-          margin-bottom: 16px;
+        .login-links {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          margin-top: 18px;
+          font-size: 14px;
         }
-        .login-success {
-          background: #ecfdf5;
-          border: 1px solid #a7f3d0;
-          color: #059669;
-          padding: 12px 16px;
-          border-radius: 10px;
-          font-size: 13px;
-          font-weight: 600;
-          margin-bottom: 16px;
-        }
-        .login-forgot {
-          text-align: center;
-          margin-top: 16px;
-        }
-        .login-forgot a {
-          font-size: 13px;
-          color: #94a3b8;
+        .login-links a {
+          color: #64748b;
           text-decoration: none;
-          font-weight: 500;
-          transition: color 0.15s;
+          font-weight: 600;
         }
-        .login-forgot a:hover { color: #6366f1; }
+        .login-links a:hover { color: var(--login-primary); }
         .login-footer {
-          margin-top: 40px;
-          font-size: 12px;
-          color: #cbd5e1;
-          text-align: center;
-          font-weight: 500;
+          margin-top: 22px;
+          color: #94a3b8;
+          font-size: 13px;
         }
-
-        /* ── MOBİL ── */
-        @media (max-width: 768px) {
+        @media (max-width: 920px) {
+          .login-page { grid-template-columns: 1fr; }
           .login-left { display: none; }
-          .login-right {
-            width: 100%;
-            min-width: 0;
-            padding: 32px 24px;
-          }
-          .login-form-wrap { max-width: 100%; }
+          .login-right { min-height: 100vh; }
+          .login-card { padding: 28px 22px; }
         }
       `}</style>
 
       <div className="login-page">
-        {/* Sol panel */}
         <div className="login-left">
-          <div className="login-left-logo">
-            Corepanel<span />
+          <div className="login-brand">
+            Corepanel
+            <span className="login-brand-dot" />
           </div>
 
-          <div className="login-left-content">
-            <div className="login-left-tag">İşletme Yönetim Sistemi</div>
-            <div className="login-left-title">
-              İşletmenizi<br />
-              <em>akıllıca</em> yönetin.
-            </div>
-            <div className="login-left-desc">
-              Satışlarınızı takip edin, stoklarınızı yönetin, personelinizi organize edin — hepsi tek panelden.
+          <div className="login-copy">
+            <div className="login-kicker">İşletme yönetim sistemi</div>
+            <h1>
+              İşletmenizi <span>akıllıca</span> yönetin.
+            </h1>
+            <p>
+              Sipariş, satış, stok ve rapor tarafını aynı akışta bir araya getiren daha olgun ve daha
+              kontrollü bir panel deneyimi.
+            </p>
+
+            <div className="login-points">
+              <div className="login-point">
+                <span className="login-point-dot" />
+                Sipariş ve satış akışı aynı yapıda ama net rollerle ilerler.
+              </div>
+              <div className="login-point">
+                <span className="login-point-dot" />
+                İşletme onayı, tahsilat ve panel kullanımı daha düzenli görünür.
+              </div>
+              <div className="login-point">
+                <span className="login-point-dot" />
+                Demo ve canlı kullanım aynı marka diliyle tutarlı ilerler.
+              </div>
             </div>
           </div>
 
-          <div className="login-left-features">
-            <div className="login-left-feature">
-              <div className="login-left-feature-dot" />
-              Gerçek zamanlı satış ve sipariş takibi
-            </div>
-            <div className="login-left-feature">
-              <div className="login-left-feature-dot" />
-              Stok alarmları ve düşük stok uyarıları
-            </div>
-            <div className="login-left-feature">
-              <div className="login-left-feature-dot" />
-              Personel daveti ve yetki yönetimi
-            </div>
-            <div className="login-left-feature">
-              <div className="login-left-feature-dot" />
-              Detaylı kâr/zarar ve ciro raporları
-            </div>
-          </div>
+            <div style={{ color: '#7c8ba1', fontSize: 14 }}>Corepanel • 2026</div>
         </div>
 
-        {/* Sağ panel */}
         <div className="login-right">
-          <div className="login-form-wrap">
-            <div className="login-form-title">Tekrar hoş geldiniz 👋</div>
-            <div className="login-form-subtitle">Hesabınıza giriş yapın</div>
+          <div className="login-card">
+            <h2>Tekrar hoş geldiniz</h2>
+            <p>Hesabınıza giriş yapın veya demo hesabı ile paneli hızlıca inceleyin.</p>
 
-            {error && <div className="login-error">{error}</div>}
+            {error && <div className="login-alert error">{error}</div>}
             {!error && approvalPending && (
-              <div className="login-error">{APPROVAL_PENDING_MESSAGE}</div>
+              <div className="login-alert error">{APPROVAL_PENDING_MESSAGE}</div>
             )}
             {!error && passwordChanged && (
-              <div className="login-success">Sifreniz guncellendi. Yeni sifrenizle tekrar giris yapabilirsiniz.</div>
+              <div className="login-alert success">
+                Şifreniz güncellendi. Yeni şifrenizle tekrar giriş yapabilirsiniz.
+              </div>
             )}
 
-            <label className="login-label">E-Posta</label>
+            <label className="login-label">E-posta</label>
             <input
               className="login-input"
               type="email"
@@ -409,22 +382,25 @@ export default function LoginPage() {
             />
 
             <button className="login-btn" onClick={handleLogin} disabled={loading || demoLoading}>
-              {loading ? 'Giriş yapılıyor...' : 'Giriş Yap →'}
+              {loading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
             </button>
 
             <div className="login-divider">veya</div>
 
-            <button className="login-demo-btn" onClick={handleDemo} disabled={loading || demoLoading}>
-              {demoLoading ? 'Yükleniyor...' : '🎯 Demo Hesabıyla Dene'}
+            <button
+              className="login-demo-btn"
+              onClick={handleDemo}
+              disabled={loading || demoLoading}
+            >
+              {demoLoading ? 'Yükleniyor...' : 'Demo Hesabıyla Dene'}
             </button>
 
-            <div className="login-forgot">
+            <div className="login-links">
               <Link to="/forgot-password">Şifremi unuttum</Link>
+              <Link to="/register">İşletme kaydı oluştur</Link>
             </div>
 
-            <div className="login-footer">
-              Corepanel v1.0 · Tüm hakları saklıdır
-            </div>
+            <div className="login-footer">Corepanel v1.0 • Tüm hakları saklıdır.</div>
           </div>
         </div>
       </div>

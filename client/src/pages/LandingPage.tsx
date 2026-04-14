@@ -1,402 +1,383 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+const features = [
+  ['Canlı Panel', 'Sipariş, satış, müşteri ve rapor akışını tek ekranda izleyin.'],
+  ['Stok Kontrolü', 'Düşük stok riskini erkenden görün ve ürün akışınız aksamadan ilerlesin.'],
+  ['Rol Ayrımı', 'MAIN_ADMIN ve işletme kullanıcılarını farklı mantıklarla yönetin.'],
+  ['Excel Raporu', 'Düzenli rapor alın, tahsilat ve operasyon tarafını kolay paylaşın.'],
+];
+
+const steps = [
+  ['Kayıt', 'İşletme ve yönetici hesabını oluşturun.'],
+  ['Onay', 'MAIN_ADMIN onayı sonrası erişiminiz açılsın.'],
+  ['Kurulum', 'Ürün, müşteri ve sipariş akışlarını ekleyin.'],
+  ['Yönetim', 'Panelden satış, rapor ve tahsilatı yönetin.'],
+];
+
 export default function LandingPage() {
   const navigate = useNavigate();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <div style={{ background: '#0a0a0f', minHeight: '100vh' }}>
+    <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
-        html, body { background: #0a0a0f !important; }
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
         :root {
-          --indigo: #6366f1;
-          --indigo-dark: #4338ca;
-          --indigo-light: #818cf8;
-          --cyan: #06b6d4;
-          --dark: #0a0a0f;
-          --dark2: #12121a;
-          --border: rgba(255,255,255,0.07);
+          --bg: #08111f;
+          --panel: rgba(10, 20, 36, 0.82);
+          --panel-strong: rgba(13, 25, 44, 0.94);
+          --line: rgba(148, 163, 184, 0.14);
           --text: #e2e8f0;
-          --muted: #64748b;
+          --muted: #94a3b8;
+          --title: #f8fafc;
+          --primary: #4f46e5;
+          --accent: #14b8a6;
         }
-
-        html { scroll-behavior: smooth; }
-        body { font-family: 'DM Sans', sans-serif; background: #0a0a0f; color: var(--text); overflow-x: hidden; }
-
-        /* NAVBAR */
-        .nav {
-          position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-          display: flex; align-items: center; justify-content: space-between;
-          padding: 18px 60px;
-          background: rgba(10,10,15,0.85);
-          backdrop-filter: blur(20px);
-          border-bottom: 1px solid var(--border);
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; background: radial-gradient(circle at top left, rgba(79,70,229,.25), transparent 28%), linear-gradient(180deg, #08111f 0%, #0b1322 60%, #09101b 100%); color: var(--text); }
+        .lp-shell { min-height: 100vh; }
+        .lp-container { width: min(1160px, calc(100% - 40px)); margin: 0 auto; }
+        .lp-nav { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(18px); background: rgba(8,17,31,.72); border-bottom: 1px solid var(--line); }
+        .lp-nav-row { min-height: 78px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+        .lp-brand { font-family: 'Syne', sans-serif; font-size: 31px; font-weight: 800; letter-spacing: -.06em; color: var(--title); display: inline-flex; align-items: center; gap: 8px; }
+        .lp-brand-dot { width: 10px; height: 10px; border-radius: 999px; background: linear-gradient(135deg, #67e8f9, var(--accent)); box-shadow: 0 0 18px rgba(20,184,166,.65); }
+        .lp-links, .lp-actions { display: flex; align-items: center; gap: 24px; }
+        .lp-links a, .lp-link-btn { color: var(--muted); text-decoration: none; font-weight: 600; font-size: 15px; background: none; border: none; cursor: pointer; }
+        .lp-links a:hover, .lp-link-btn:hover { color: var(--title); }
+        .lp-primary, .lp-secondary { border-radius: 16px; padding: 14px 22px; font-weight: 700; font-size: 15px; font-family: inherit; cursor: pointer; transition: transform .18s ease, box-shadow .18s ease; }
+        .lp-primary { border: none; color: #fff; background: linear-gradient(135deg, var(--primary), #6366f1 58%, var(--accent) 150%); box-shadow: 0 18px 34px rgba(79,70,229,.34); }
+        .lp-secondary { border: 1px solid rgba(148,163,184,.18); color: var(--title); background: rgba(255,255,255,.04); }
+        .lp-primary:hover, .lp-secondary:hover { transform: translateY(-1px); }
+        .lp-toggle { display: none; width: 44px; height: 44px; border-radius: 14px; border: 1px solid rgba(148,163,184,.18); background: rgba(255,255,255,.04); color: var(--title); cursor: pointer; }
+        .lp-mobile { display: none; padding: 0 0 20px; gap: 12px; }
+        .lp-mobile.open { display: grid; }
+        .lp-mobile a, .lp-mobile button { width: 100%; }
+        .lp-hero { padding: 56px 0 74px; }
+        .lp-hero-grid { display: grid; grid-template-columns: minmax(0, 1.04fr) minmax(340px, .96fr); gap: 34px; align-items: center; }
+        .lp-eyebrow { display: inline-flex; align-items: center; gap: 10px; padding: 10px 16px; border-radius: 999px; background: rgba(79,70,229,.16); border: 1px solid rgba(129,140,248,.24); color: #c7d2fe; font-size: 13px; font-weight: 700; margin-bottom: 22px; }
+        .lp-eyebrow::before { content: ''; width: 8px; height: 8px; border-radius: 999px; background: var(--accent); box-shadow: 0 0 12px rgba(20,184,166,.6); }
+        .lp-title { margin: 0 0 18px; font-family: 'Syne', sans-serif; font-size: clamp(48px, 8vw, 84px); line-height: .97; letter-spacing: -.08em; color: var(--title); }
+        .lp-title span { background: linear-gradient(135deg, #93c5fd, #67e8f9 46%, #2dd4bf); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .lp-text { margin: 0 0 28px; max-width: 610px; color: #a8b6ca; font-size: 18px; line-height: 1.82; }
+        .lp-hero-actions { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 28px; }
+        .lp-proof { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+        .lp-proof-card, .lp-card, .lp-panel-card { border-radius: 24px; background: var(--panel); border: 1px solid var(--line); }
+        .lp-proof-card { padding: 18px; }
+        .lp-proof-value { font-size: 24px; font-weight: 800; color: var(--title); }
+        .lp-proof-text { margin-top: 8px; color: var(--muted); line-height: 1.6; font-size: 14px; }
+        .lp-preview { padding: 20px; background: linear-gradient(180deg, rgba(17,29,48,.96), rgba(9,16,28,.98)); box-shadow: 0 24px 70px rgba(2,8,23,.42); }
+        .lp-preview-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+        .lp-preview-title { font-size: 14px; font-weight: 700; color: #c7d2fe; }
+        .lp-pill { padding: 8px 12px; border-radius: 999px; background: rgba(20,184,166,.14); color: #99f6e4; font-size: 12px; font-weight: 800; }
+        .lp-kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+        .lp-kpi { padding: 18px; border-radius: 20px; background: rgba(255,255,255,.04); border: 1px solid rgba(148,163,184,.1); }
+        .lp-kpi-label { color: var(--muted); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+        .lp-kpi-value { margin-top: 12px; color: var(--title); font-size: 34px; font-weight: 800; }
+        .lp-kpi-note { margin-top: 8px; color: #7dd3fc; font-size: 14px; font-weight: 600; }
+        .lp-chart { margin-top: 14px; padding: 18px; border-radius: 20px; background: rgba(255,255,255,.04); border: 1px solid rgba(148,163,184,.1); }
+        .lp-chart-head { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+        .lp-chart-head strong { display: block; color: var(--title); font-size: 15px; }
+        .lp-chart-head span { color: var(--muted); font-size: 12px; }
+        .lp-bars { display: grid; grid-template-columns: repeat(6, minmax(0,1fr)); align-items: end; gap: 10px; min-height: 140px; }
+        .lp-bar-wrap { display: grid; justify-items: center; gap: 10px; }
+        .lp-bar { width: 100%; border-radius: 999px 999px 14px 14px; background: linear-gradient(180deg, rgba(34,197,94,.95), rgba(79,70,229,.95)); }
+        .lp-bar-label { color: var(--muted); font-size: 12px; }
+        .lp-section { padding: 82px 0; }
+        .lp-section-head { max-width: 640px; margin-bottom: 26px; }
+        .lp-kicker { color: #7dd3fc; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .12em; }
+        .lp-heading { margin: 12px 0 14px; color: var(--title); font-family: 'Syne', sans-serif; font-size: clamp(34px, 5vw, 58px); line-height: 1.03; letter-spacing: -.06em; }
+        .lp-body { margin: 0; color: #9fb0c6; line-height: 1.82; font-size: 16px; }
+        .lp-grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 16px; }
+        .lp-card { padding: 24px; }
+        .lp-icon { width: 50px; height: 50px; border-radius: 16px; display: inline-flex; align-items: center; justify-content: center; background: rgba(79,70,229,.16); margin-bottom: 16px; font-size: 22px; }
+        .lp-card h3 { margin: 0 0 10px; color: var(--title); font-size: 18px; }
+        .lp-card p { margin: 0; color: #9fb0c6; line-height: 1.75; font-size: 15px; }
+        .lp-flow { background: linear-gradient(180deg, rgba(11,20,36,.62), rgba(7,17,31,0)); border-top: 1px solid rgba(148,163,184,.08); border-bottom: 1px solid rgba(148,163,184,.08); }
+        .lp-step { padding: 24px; border-radius: 24px; background: var(--panel); border: 1px solid var(--line); }
+        .lp-step-badge { width: 54px; height: 54px; border-radius: 18px; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px; font-size: 16px; font-weight: 800; color: var(--title); background: linear-gradient(135deg, rgba(79,70,229,.92), rgba(20,184,166,.64)); }
+        .lp-step h3 { margin: 0 0 10px; color: var(--title); font-size: 18px; }
+        .lp-step p { margin: 0; color: #9fb0c6; line-height: 1.72; }
+        .lp-pricing { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 16px; }
+        .lp-pricing-card { padding: 28px; border-radius: 26px; background: var(--panel); border: 1px solid var(--line); display: grid; gap: 16px; }
+        .lp-pricing-card.featured { background: linear-gradient(180deg, rgba(79,70,229,.18), rgba(10,20,36,.88)); border-color: rgba(129,140,248,.34); box-shadow: 0 18px 50px rgba(79,70,229,.18); }
+        .lp-badge { display: inline-flex; padding: 8px 12px; border-radius: 999px; background: rgba(20,184,166,.14); color: #99f6e4; font-size: 12px; font-weight: 800; }
+        .lp-pricing-card h3 { margin: 0; color: var(--title); font-size: 22px; }
+        .lp-price { color: var(--title); font-family: 'Syne', sans-serif; font-size: 42px; line-height: 1; letter-spacing: -.06em; }
+        .lp-pricing-card p { margin: 0; color: #9fb0c6; line-height: 1.75; }
+        .lp-pricing-card ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; color: #dbe6f3; font-size: 15px; }
+        .lp-pricing-card li::before { content: '• '; color: #2dd4bf; font-weight: 800; }
+        .lp-cta { padding: 92px 0 108px; }
+        .lp-cta-card { text-align: center; padding: 44px; border-radius: 32px; background: linear-gradient(135deg, rgba(79,70,229,.22), rgba(15,23,42,.92) 60%, rgba(20,184,166,.14)); border: 1px solid rgba(129,140,248,.24); box-shadow: 0 24px 70px rgba(2,8,23,.42); }
+        .lp-cta-card h2 { margin: 12px 0 14px; color: var(--title); font-family: 'Syne', sans-serif; font-size: clamp(34px, 5vw, 56px); line-height: 1.04; letter-spacing: -.06em; }
+        .lp-cta-card p { margin: 0 auto 24px; max-width: 620px; color: #b6c2d2; line-height: 1.82; }
+        .lp-footer { border-top: 1px solid rgba(148,163,184,.08); padding: 24px 0 36px; color: #7c8ba1; font-size: 14px; }
+        .lp-footer-row { display: flex; justify-content: space-between; gap: 14px; }
+        @media (max-width: 1040px) {
+          .lp-hero-grid, .lp-grid-4, .lp-pricing, .lp-proof { grid-template-columns: 1fr; }
         }
-        .nav-logo {
-          font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800;
-          background: linear-gradient(135deg, #fff 0%, var(--indigo-light) 100%);
-          -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-          letter-spacing: -0.5px;
-        }
-        .nav-logo span {
-          display: inline-block; width: 6px; height: 6px;
-          background: var(--cyan); border-radius: 50%;
-          margin-left: 2px; vertical-align: middle; margin-bottom: 4px;
-        }
-        .nav-links { display: flex; align-items: center; gap: 32px; }
-        .nav-link { font-size: 14px; font-weight: 500; color: var(--muted); text-decoration: none; transition: color 0.2s; }
-        .nav-link:hover { color: #fff; }
-        .nav-cta {
-          padding: 9px 22px; background: var(--indigo); border: none; border-radius: 10px;
-          color: #fff; font-size: 14px; font-weight: 600; font-family: 'DM Sans', sans-serif;
-          cursor: pointer; transition: all 0.2s; box-shadow: 0 0 20px rgba(99,102,241,0.3);
-        }
-        .nav-cta:hover { background: var(--indigo-dark); transform: translateY(-1px); }
-
-        /* HAMBURGER */
-        .hamburger { display: none; flex-direction: column; gap: 5px; background: none; border: none; cursor: pointer; padding: 4px; }
-        .hamburger-line { width: 24px; height: 2px; background: #fff; border-radius: 2px; transition: all 0.3s; }
-        .hamburger.open .hamburger-line:nth-child(1) { transform: translateY(7px) rotate(45deg); }
-        .hamburger.open .hamburger-line:nth-child(2) { opacity: 0; }
-        .hamburger.open .hamburger-line:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
-        .mobile-menu { display: none; position: absolute; top: 100%; left: 0; right: 0; background: rgba(10,10,15,0.95); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); padding: 16px 20px; flex-direction: column; gap: 12px; animation: slideDown 0.25s ease; }
-        .mobile-menu.open { display: flex; }
-        .mobile-menu .nav-link { font-size: 16px; padding: 8px 0; display: block; }
-        .mobile-menu .nav-cta { width: 100%; text-align: center; padding: 12px; border-radius: 12px; }
-        @keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* HERO */
-        .hero {
-          min-height: 100vh; display: flex; flex-direction: column;
-          align-items: center; justify-content: center; text-align: center;
-          padding: 120px 24px 80px; position: relative; overflow: hidden;
-          background: #0a0a0f;
-        }
-        .hero-bg {
-          position: absolute; inset: 0; z-index: 0;
-          background:
-            radial-gradient(ellipse 80% 50% at 50% -10%, rgba(99,102,241,0.25) 0%, transparent 70%),
-            radial-gradient(ellipse 40% 30% at 80% 80%, rgba(6,182,212,0.1) 0%, transparent 60%);
-        }
-        .hero-grid {
-          position: absolute; inset: 0; z-index: 0;
-          background-image:
-            linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
-          background-size: 60px 60px;
-          mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 0%, transparent 100%);
-        }
-        .hero-badge {
-          display: inline-flex; align-items: center; gap: 8px;
-          padding: 6px 16px; background: rgba(99,102,241,0.1);
-          border: 1px solid rgba(99,102,241,0.3); border-radius: 100px;
-          font-size: 12px; font-weight: 600; color: var(--indigo-light);
-          letter-spacing: 0.5px; margin-bottom: 28px;
-          position: relative; z-index: 1;
-          animation: fadeUp 0.6s ease both;
-        }
-        .hero-badge-dot { width: 6px; height: 6px; background: var(--cyan); border-radius: 50%; animation: pulse 2s infinite; }
-        @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
-        .hero-title {
-          font-family: 'Syne', sans-serif;
-          font-size: clamp(42px, 7vw, 80px); font-weight: 800; line-height: 1.05;
-          letter-spacing: -2px; color: #fff; margin-bottom: 24px;
-          position: relative; z-index: 1;
-          animation: fadeUp 0.6s 0.1s ease both;
-        }
-        .hero-title em {
-          font-style: normal;
-          background: linear-gradient(135deg, var(--indigo-light), var(--cyan));
-          -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-        }
-        .hero-desc {
-          font-size: 18px; font-weight: 400; color: #94a3b8;
-          max-width: 560px; line-height: 1.7; margin-bottom: 44px;
-          position: relative; z-index: 1;
-          animation: fadeUp 0.6s 0.2s ease both;
-        }
-        .hero-btns {
-          display: flex; gap: 14px; justify-content: center;
-          position: relative; z-index: 1;
-          animation: fadeUp 0.6s 0.3s ease both;
-        }
-        .btn-primary {
-          padding: 14px 32px; background: var(--indigo); border: none; border-radius: 12px;
-          color: #fff; font-size: 15px; font-weight: 600; font-family: 'DM Sans', sans-serif;
-          cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 24px rgba(99,102,241,0.4);
-        }
-        .btn-primary:hover { background: var(--indigo-dark); transform: translateY(-2px); box-shadow: 0 8px 32px rgba(99,102,241,0.5); }
-        .btn-secondary {
-          padding: 14px 32px; background: rgba(255,255,255,0.06);
-          border: 1px solid rgba(255,255,255,0.25); border-radius: 12px;
-          color: #e2e8f0; font-size: 15px; font-weight: 600; font-family: 'DM Sans', sans-serif;
-          cursor: pointer; transition: all 0.2s;
-        }
-        .btn-secondary:hover { border-color: rgba(255,255,255,0.4); color: #fff; background: rgba(255,255,255,0.1); }
-        .hero-stats {
-          display: flex; gap: 48px; justify-content: center; margin-top: 72px;
-          position: relative; z-index: 1;
-          animation: fadeUp 0.6s 0.4s ease both;
-        }
-        .hero-stat-val { font-family: 'Syne', sans-serif; font-size: 32px; font-weight: 800; color: #fff; letter-spacing: -1px; }
-        .hero-stat-val span { color: var(--indigo-light); }
-        .hero-stat-lbl { font-size: 13px; color: var(--muted); margin-top: 4px; font-weight: 500; }
-
-        @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* SECTION */
-        .section { padding: 100px 24px; background: #0a0a0f; }
-        .section-inner { max-width: 1100px; margin: 0 auto; }
-        .section-tag { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--indigo-light); margin-bottom: 16px; }
-        .section-title { font-family: 'Syne', sans-serif; font-size: clamp(28px, 4vw, 44px); font-weight: 800; color: #fff; letter-spacing: -1px; line-height: 1.1; margin-bottom: 16px; }
-        .section-desc { font-size: 16px; color: #64748b; line-height: 1.7; max-width: 560px; }
-
-        /* FEATURES */
-        .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 56px; }
-        .feature-card {
-          background: var(--dark2); border: 1px solid var(--border);
-          border-radius: 20px; padding: 32px; transition: all 0.3s; position: relative; overflow: hidden;
-        }
-        .feature-card::before {
-          content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
-          background: linear-gradient(90deg, transparent, rgba(99,102,241,0.5), transparent);
-          opacity: 0; transition: opacity 0.3s;
-        }
-        .feature-card:hover { border-color: rgba(99,102,241,0.3); transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
-        .feature-card:hover::before { opacity: 1; }
-        .feature-icon { width: 48px; height: 48px; background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 20px; }
-        .feature-title { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 700; color: #fff; margin-bottom: 10px; }
-        .feature-desc { font-size: 14px; color: #64748b; line-height: 1.65; }
-
-        /* HOW */
-        .how-section { background: var(--dark2) !important; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
-        .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin-top: 56px; position: relative; }
-        .steps::before { content: ''; position: absolute; top: 28px; left: 12.5%; right: 12.5%; height: 1px; background: linear-gradient(90deg, transparent, var(--indigo), var(--cyan), var(--indigo), transparent); opacity: 0.3; }
-        .step { text-align: center; padding: 0 20px; }
-        .step-num { width: 56px; height: 56px; background: linear-gradient(135deg, var(--indigo), var(--indigo-dark)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; color: #fff; margin: 0 auto 20px; box-shadow: 0 0 24px rgba(99,102,241,0.4); position: relative; z-index: 1; }
-        .step-title { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 10px; }
-        .step-desc { font-size: 13px; color: #64748b; line-height: 1.6; }
-
-        /* PRICING */
-        .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 56px; }
-        .pricing-card { background: var(--dark2); border: 1px solid var(--border); border-radius: 24px; padding: 36px; position: relative; transition: all 0.3s; }
-        .pricing-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
-        .pricing-card.featured { background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(6,182,212,0.05)); border-color: rgba(99,102,241,0.4); box-shadow: 0 0 40px rgba(99,102,241,0.15); }
-        .pricing-badge { display: inline-block; padding: 4px 12px; background: var(--indigo); border-radius: 100px; font-size: 11px; font-weight: 700; color: #fff; margin-bottom: 20px; }
-        .pricing-name { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 8px; }
-        .pricing-price { font-family: 'Syne', sans-serif; font-size: 44px; font-weight: 800; color: #fff; letter-spacing: -2px; margin-bottom: 4px; }
-        .pricing-price span { font-size: 18px; font-weight: 500; color: var(--muted); letter-spacing: 0; }
-        .pricing-desc { font-size: 13px; color: var(--muted); margin-bottom: 28px; }
-        .pricing-divider { height: 1px; background: var(--border); margin-bottom: 24px; }
-        .pricing-features { list-style: none; display: flex; flex-direction: column; gap: 12px; margin-bottom: 32px; }
-        .pricing-feature { display: flex; align-items: center; gap: 10px; font-size: 14px; color: #94a3b8; }
-        .pricing-check { color: var(--cyan); font-size: 16px; }
-        .pricing-btn { width: 100%; padding: 13px; border-radius: 12px; border: none; font-size: 15px; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.2s; }
-        .pricing-btn-outline { background: transparent; border: 1px solid var(--border) !important; color: #94a3b8; }
-        .pricing-btn-outline:hover { border-color: rgba(255,255,255,0.2) !important; color: #fff; background: rgba(255,255,255,0.04); }
-        .pricing-btn-filled { background: var(--indigo); color: #fff; box-shadow: 0 4px 20px rgba(99,102,241,0.4); }
-        .pricing-btn-filled:hover { background: var(--indigo-dark); transform: translateY(-1px); }
-
-        /* CTA */
-        .cta-section { padding: 100px 24px; text-align: center; position: relative; overflow: hidden; background: #0a0a0f; }
-        .cta-bg { position: absolute; inset: 0; z-index: 0; background: radial-gradient(ellipse 60% 60% at 50% 50%, rgba(99,102,241,0.15) 0%, transparent 70%); }
-        .cta-title { font-family: 'Syne', sans-serif; font-size: clamp(32px, 5vw, 56px); font-weight: 800; color: #fff; letter-spacing: -1.5px; line-height: 1.1; margin-bottom: 20px; position: relative; z-index: 1; }
-        .cta-desc { font-size: 17px; color: #64748b; margin-bottom: 40px; position: relative; z-index: 1; }
-        .cta-btns { display: flex; gap: 14px; justify-content: center; position: relative; z-index: 1; }
-
-        /* FOOTER */
-        .footer { border-top: 1px solid var(--border); padding: 32px 60px; display: flex; align-items: center; justify-content: space-between; background: #0a0a0f; }
-        .footer-logo { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; color: #475569; }
-        .footer-copy { font-size: 13px; color: #334155; }
-
-        @media (max-width: 768px) {
-          .nav { padding: 16px 20px; }
-          .nav-links { display: none; }
-          .hamburger { display: flex; }
-          .hero-stats { gap: 24px; flex-wrap: wrap; }
-          .features-grid { grid-template-columns: 1fr; }
-          .steps { grid-template-columns: 1fr 1fr; gap: 32px; }
-          .steps::before { display: none; }
-          .pricing-grid { grid-template-columns: 1fr; }
-          .footer { flex-direction: column; gap: 12px; text-align: center; padding: 24px; }
+        @media (max-width: 820px) {
+          .lp-links, .lp-actions { display: none; }
+          .lp-toggle { display: inline-flex; align-items: center; justify-content: center; }
+          .lp-kpis { grid-template-columns: 1fr; }
+          .lp-footer-row { flex-direction: column; }
+          .lp-cta-card { padding: 28px; }
         }
       `}</style>
 
-      {/* NAVBAR */}
-      <nav className="nav" style={{ position: 'fixed' }}>
-        <div className="nav-logo">Corepanel<span /></div>
-        <div className="nav-links">
-          <a href="#features" className="nav-link">Özellikler</a>
-          <a href="#how" className="nav-link">Nasıl Çalışır?</a>
-          <a href="#pricing" className="nav-link">Fiyatlar</a>
-          <button className="nav-cta" onClick={() => navigate('/login')}>Giriş Yap</button>
-        </div>
-        <button className="hamburger" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-          <span className="hamburger-line" />
-          <span className="hamburger-line" />
-          <span className="hamburger-line" />
-        </button>
-        <div className={`mobile-menu ${mobileMenuOpen ? 'open' : ''}`}>
-          <a href="#features" className="nav-link" onClick={() => setMobileMenuOpen(false)}>Özellikler</a>
-          <a href="#how" className="nav-link" onClick={() => setMobileMenuOpen(false)}>Nasıl Çalışır?</a>
-          <a href="#pricing" className="nav-link" onClick={() => setMobileMenuOpen(false)}>Fiyatlar</a>
-          <button className="nav-cta" onClick={() => { setMobileMenuOpen(false); navigate('/login'); }}>Giriş Yap</button>
-        </div>
-      </nav>
+      <div className="lp-shell">
+        <nav className="lp-nav">
+          <div className="lp-container lp-nav-row">
+            <div className="lp-brand">
+              Corepanel
+              <span className="lp-brand-dot" />
+            </div>
 
-      {/* HERO */}
-      <section className="hero">
-        <div className="hero-bg" />
-        <div className="hero-grid" />
-        <div className="hero-badge">
-          <span className="hero-badge-dot" />
-          İşletme Yönetim Sistemi
-        </div>
-        <h1 className="hero-title">
-          İşletmenizi<br />
-          <em>akıllıca</em> yönetin.
-        </h1>
-        <p className="hero-desc">
-          Satışlarınızı takip edin, stoklarınızı yönetin, müşterilerinizi organize edin — hepsi tek, sade bir panelden.
-        </p>
-        <div className="hero-btns">
-          <button className="btn-primary" onClick={() => navigate('/register')}>Ücretsiz Başla →</button>
-          <button className="btn-secondary" onClick={() => navigate('/login')}>🎯 Demo Dene</button>
-        </div>
-        <div className="hero-stats">
-          <div>
-            <div className="hero-stat-val">100<span>%</span></div>
-            <div className="hero-stat-lbl">Bulut Tabanlı</div>
-          </div>
-          <div>
-            <div className="hero-stat-val">7<span>/24</span></div>
-            <div className="hero-stat-lbl">Erişim</div>
-          </div>
-          <div>
-            <div className="hero-stat-val">0<span>₺</span></div>
-            <div className="hero-stat-lbl">Başlangıç Ücreti</div>
-          </div>
-        </div>
-      </section>
+            <div className="lp-links">
+              <a href="#ozellikler">Özellikler</a>
+              <a href="#akis">Nasıl Çalışır</a>
+              <a href="#fiyatlar">Paketler</a>
+            </div>
 
-      {/* FEATURES */}
-      <section className="section" id="features">
-        <div className="section-inner">
-          <div className="section-tag">Özellikler</div>
-          <h2 className="section-title">İhtiyacınız olan<br />her şey burada.</h2>
-          <p className="section-desc">Küçük ve orta ölçekli işletmeler için tasarlanmış, güçlü ama sade araçlar.</p>
-          <div className="features-grid">
-            {[
-              { icon: '📊', title: 'Genel Bakış Paneli', desc: 'Günlük, haftalık ve aylık satış, sipariş ve ciro verilerinizi tek bakışta görün.' },
-              { icon: '📦', title: 'Ürün & Stok Yönetimi', desc: 'Ürünlerinizi ekleyin, stok takibi yapın, düşük stok uyarılarını anında alın.' },
-              { icon: '🛒', title: 'Sipariş Takibi', desc: 'Siparişleri oluşturun, durumlarını güncelleyin ve otomatik fatura oluşturun.' },
-              { icon: '💰', title: 'Satış Kayıtları', desc: 'Her satışı kaydedin, kâr marjınızı hesaplayın ve gelirlerinizi raporlayın.' },
-              { icon: '👥', title: 'Müşteri Yönetimi', desc: 'Müşteri veritabanınızı oluşturun, sipariş geçmişini takip edin.' },
-              { icon: '📈', title: 'Raporlar', desc: 'Kâr/zarar, ciro ve satış raporlarını detaylı grafiklerle analiz edin.' },
-            ].map((f, i) => (
-              <div key={i} className="feature-card">
-                <div className="feature-icon">{f.icon}</div>
-                <div className="feature-title">{f.title}</div>
-                <div className="feature-desc">{f.desc}</div>
+            <div className="lp-actions">
+              <button className="lp-link-btn" onClick={() => navigate('/login')}>
+                Giriş Yap
+              </button>
+              <button className="lp-primary" onClick={() => navigate('/register')}>
+                İşletmeni Kaydet
+              </button>
+            </div>
+
+              <button className="lp-toggle" onClick={() => setMenuOpen((open) => !open)}>
+                ☰
+              </button>
+          </div>
+
+          <div className={`lp-container lp-mobile ${menuOpen ? 'open' : ''}`}>
+            <a href="#ozellikler" onClick={() => setMenuOpen(false)}>
+              Özellikler
+            </a>
+            <a href="#akis" onClick={() => setMenuOpen(false)}>
+              Nasıl Çalışır
+            </a>
+            <a href="#fiyatlar" onClick={() => setMenuOpen(false)}>
+              Paketler
+            </a>
+            <button className="lp-secondary" onClick={() => navigate('/login')}>
+              Giriş Yap
+            </button>
+            <button className="lp-primary" onClick={() => navigate('/register')}>
+              İşletmeni Kaydet
+            </button>
+          </div>
+        </nav>
+
+        <section className="lp-hero">
+          <div className="lp-container lp-hero-grid">
+            <div>
+              <div className="lp-eyebrow">SaaS işletme yönetim paneli</div>
+              <h1 className="lp-title">
+                İşletmenizi <span>tek merkezden</span> yönetin.
+              </h1>
+              <p className="lp-text">
+                Corepanel; sipariş, satış, rapor ve tahsilat akışlarını tek bir düzende toplar.
+                Hem işletme kullanımında hem de MAIN_ADMIN tarafında temiz bir kontrol hissi verir.
+              </p>
+
+              <div className="lp-hero-actions">
+                <button className="lp-primary" onClick={() => navigate('/register')}>
+                  Ücretsiz kayıt ol
+                </button>
+                <button className="lp-secondary" onClick={() => navigate('/login')}>
+                  Demo hesabıyla incele
+                </button>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      {/* HOW IT WORKS */}
-      <section className="section how-section" id="how">
-        <div className="section-inner">
-          <div className="section-tag">Nasıl Çalışır?</div>
-          <h2 className="section-title">Dakikalar içinde<br />hazır olun.</h2>
-          <div className="steps">
-            {[
-              { n: '1', title: 'Kayıt Olun', desc: 'İşletme adınız ve sektörünüzle ücretsiz hesap açın.' },
-              { n: '2', title: 'Onay Alın', desc: 'Hesabınız kısa sürede onaylanır, panele erişim sağlarsınız.' },
-              { n: '3', title: 'Ürün Ekleyin', desc: 'Ürünlerinizi ve başlangıç stoklarınızı sisteme girin.' },
-              { n: '4', title: 'Yönetmeye Başlayın', desc: 'Satış, sipariş ve müşteri yönetimini tek panelden yapın.' },
-            ].map((s, i) => (
-              <div key={i} className="step">
-                <div className="step-num">{s.n}</div>
-                <div className="step-title">{s.title}</div>
-                <div className="step-desc">{s.desc}</div>
+              <div className="lp-proof">
+                <div className="lp-proof-card">
+                  <div className="lp-proof-value">Sipariş + Satış</div>
+                  <div className="lp-proof-text">İki farklı operasyonu aynı sistemde karıştırmadan yönetin.</div>
+                </div>
+                <div className="lp-proof-card">
+                  <div className="lp-proof-value">Onay Akışı</div>
+                  <div className="lp-proof-text">İşletme kayıtlarınızı onay ve yetki mantığıyla kontrol edin.</div>
+                </div>
+                <div className="lp-proof-card">
+                  <div className="lp-proof-value">Rapor Disiplini</div>
+                  <div className="lp-proof-text">Panelden Excel çıkışına kadar veriyi düzenli okuyun.</div>
+                </div>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
+            </div>
 
-      {/* PRICING */}
-      <section className="section" id="pricing">
-        <div className="section-inner">
-          <div className="section-tag">Fiyatlandırma</div>
-          <h2 className="section-title">Şeffaf fiyatlar,<br />sürpriz yok.</h2>
-          <p className="section-desc">İşletmenizin büyüklüğüne göre size uygun planı seçin.</p>
-          <div className="pricing-grid">
-            <div className="pricing-card">
-              <div className="pricing-name">Başlangıç</div>
-              <div className="pricing-price">Ücretsiz</div>
-              <div className="pricing-desc">Küçük işletmeler için</div>
-              <div className="pricing-divider" />
-              <ul className="pricing-features">
-                {['1 kullanıcı', '50 ürün', '100 sipariş/ay', 'Temel raporlar', 'E-posta desteği'].map((f, i) => (
-                  <li key={i} className="pricing-feature"><span className="pricing-check">✓</span>{f}</li>
-                ))}
-              </ul>
-              <button className="pricing-btn pricing-btn-outline" onClick={() => navigate('/register')}>Ücretsiz Başla</button>
-            </div>
-            <div className="pricing-card featured">
-              <div className="pricing-badge">⭐ En Popüler</div>
-              <div className="pricing-name">Pro</div>
-              <div className="pricing-price">₺299<span>/ay</span></div>
-              <div className="pricing-desc">Büyüyen işletmeler için</div>
-              <div className="pricing-divider" />
-              <ul className="pricing-features">
-                {['5 kullanıcı', 'Sınırsız ürün', 'Sınırsız sipariş', 'Gelişmiş raporlar', 'Personel yönetimi', 'Öncelikli destek'].map((f, i) => (
-                  <li key={i} className="pricing-feature"><span className="pricing-check">✓</span>{f}</li>
-                ))}
-              </ul>
-              <button className="pricing-btn pricing-btn-filled" onClick={() => navigate('/register')}>Hemen Başla →</button>
-            </div>
-            <div className="pricing-card">
-              <div className="pricing-name">Kurumsal</div>
-              <div className="pricing-price">Özel</div>
-              <div className="pricing-desc">Büyük işletmeler için</div>
-              <div className="pricing-divider" />
-              <ul className="pricing-features">
-                {['Sınırsız kullanıcı', 'Sınırsız her şey', 'Özel entegrasyonlar', 'API erişimi', '7/24 destek', 'Özel eğitim'].map((f, i) => (
-                  <li key={i} className="pricing-feature"><span className="pricing-check">✓</span>{f}</li>
-                ))}
-              </ul>
-              <button className="pricing-btn pricing-btn-outline" onClick={() => navigate('/login')}>Bize Ulaşın</button>
+            <div className="lp-preview">
+              <div className="lp-preview-top">
+                <div className="lp-preview-title">Corepanel Dashboard</div>
+                <div className="lp-pill">Canlı görünüm</div>
+              </div>
+
+              <div className="lp-kpis">
+                <div className="lp-kpi">
+                  <div className="lp-kpi-label">Aylık paket geliri</div>
+                  <div className="lp-kpi-value">₺18.400</div>
+                  <div className="lp-kpi-note">Tahsilat takibiyle uyumlu</div>
+                </div>
+                <div className="lp-kpi">
+                  <div className="lp-kpi-label">Bugünkü hareket</div>
+                  <div className="lp-kpi-value">37</div>
+                  <div className="lp-kpi-note">Sipariş ve satış toplamı</div>
+                </div>
+              </div>
+
+              <div className="lp-chart">
+                <div className="lp-chart-head">
+                  <div>
+                    <strong>Son 6 aylık akış</strong>
+                    <span>İşletme ve tahsilat verileri birlikte izlenir</span>
+                  </div>
+                  <div className="lp-pill">Rapor hazır</div>
+                </div>
+
+                <div className="lp-bars">
+                  {[44, 58, 48, 72, 63, 94].map((height, index) => (
+                    <div key={index} className="lp-bar-wrap">
+                      <div className="lp-bar" style={{ height: `${height}%` }} />
+                      <div className="lp-bar-label">{['Kas', 'Ara', 'Oca', 'Şub', 'Mar', 'Nis'][index]}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* CTA */}
-      <section className="cta-section">
-        <div className="cta-bg" />
-        <h2 className="cta-title">Hemen başlamaya<br />hazır mısınız?</h2>
-        <p className="cta-desc">Ücretsiz hesap açın veya demo ile sistemi tanıyın.</p>
-        <div className="cta-btns">
-          <button className="btn-primary" onClick={() => navigate('/register')}>Ücretsiz Kayıt Ol →</button>
-          <button className="btn-secondary" onClick={() => navigate('/login')}>🎯 Demo Hesabıyla Dene</button>
-        </div>
-      </section>
+        <section className="lp-section" id="ozellikler">
+          <div className="lp-container">
+            <div className="lp-section-head">
+              <div className="lp-kicker">Özellikler</div>
+              <h2 className="lp-heading">Karar vermeyi hızlandıran sade araçlar.</h2>
+              <p className="lp-body">
+                Operasyon ekibini yormadan veri düzenini kurmak için gereken temel alanları güçlü ama okunaklı bir yapıda toplar.
+              </p>
+            </div>
 
-      {/* FOOTER */}
-      <footer className="footer">
-        <div className="footer-logo">Corepanel</div>
-        <div className="footer-copy">© 2026 Corepanel · Tüm hakları saklıdır</div>
-      </footer>
-    </div>
+            <div className="lp-grid-4">
+              {features.map(([title, text], index) => (
+                <div key={title} className="lp-card">
+                  <div className="lp-icon">{['📊', '📦', '🔐', '📈'][index]}</div>
+                  <h3>{title}</h3>
+                  <p>{text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="lp-section lp-flow" id="akis">
+          <div className="lp-container">
+            <div className="lp-section-head">
+              <div className="lp-kicker">Nasıl çalışır</div>
+              <h2 className="lp-heading">Kayıttan günlük kullanıma net bir akış.</h2>
+              <p className="lp-body">
+                Onay, kurulum ve kullanım adımları birbirine bağlı ilerler. Özellikle yeni işletme hesabında karışık hissettirmez.
+              </p>
+            </div>
+
+            <div className="lp-grid-4">
+              {steps.map(([title, text], index) => (
+                <div key={title} className="lp-step">
+                  <div className="lp-step-badge">{`0${index + 1}`}</div>
+                  <h3>{title}</h3>
+                  <p>{text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="lp-section" id="fiyatlar">
+          <div className="lp-container">
+            <div className="lp-section-head">
+              <div className="lp-kicker">Paketler</div>
+              <h2 className="lp-heading">Sade paket yapısı, net yönetim mantığı.</h2>
+              <p className="lp-body">
+                Asıl odağımız işletme yönetimini düzenli kurmak. Paket kısmı da bunu anlaşılır ve uygulanabilir şekilde destekliyor.
+              </p>
+            </div>
+
+            <div className="lp-pricing">
+              <div className="lp-pricing-card">
+                <h3>Başlangıç</h3>
+                <div className="lp-price">Ücretsiz</div>
+                <p>Küçük ekipler ve ilk kurulum için rahat bir giriş seviyesi.</p>
+                <ul>
+                  <li>Temel panel erişimi</li>
+                  <li>Başlangıç kullanımı</li>
+                  <li>Hızlı kayıt ve demo akışı</li>
+                </ul>
+                <button className="lp-secondary" onClick={() => navigate('/register')}>
+                  Başvurunu oluştur
+                </button>
+              </div>
+
+              <div className="lp-pricing-card featured">
+                <div className="lp-badge">En çok tercih edilen</div>
+                <h3>Pro</h3>
+                <div className="lp-price">₺299</div>
+                <p>Sipariş, satış, rapor ve tahsilat akışlarını düzenli kullanan işletmeler için.</p>
+                <ul>
+                  <li>Paket ve tahsilat yönetimi</li>
+                  <li>Gelişmiş rapor tarafı</li>
+                  <li>Sürekli kullanım odaklı yapı</li>
+                </ul>
+                <button className="lp-primary" onClick={() => navigate('/register')}>
+                  İşletmeni kaydet
+                </button>
+              </div>
+
+              <div className="lp-pricing-card">
+                <h3>Kurumsal</h3>
+                <div className="lp-price">Özel</div>
+                <p>Daha yakın destek ve daha esnek kurulum isteyen yapılar için.</p>
+                <ul>
+                  <li>Yakın destek akışı</li>
+                  <li>Uyarlanabilir kullanım</li>
+                  <li>Daha büyük ekip yapısı</li>
+                </ul>
+                <button className="lp-secondary" onClick={() => navigate('/login')}>
+                  Giriş ekranına git
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="lp-cta">
+          <div className="lp-container">
+            <div className="lp-cta-card">
+              <div className="lp-kicker">Hazır mısınız</div>
+              <h2>Paneli canlı verilerle görmeye bugün başlayın.</h2>
+              <p>
+                İşletme kaydınızı oluşturun, onay süreci tamamlandığında panelinizi açın ve siparişten tahsilata kadar tüm akışı tek merkezde yönetin.
+              </p>
+              <div className="lp-hero-actions" style={{ justifyContent: 'center' }}>
+                <button className="lp-primary" onClick={() => navigate('/register')}>
+                  İşletme kaydı oluştur
+                </button>
+                <button className="lp-secondary" onClick={() => navigate('/login')}>
+                  Giriş ekranına git
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <footer className="lp-footer">
+          <div className="lp-container lp-footer-row">
+            <div>Corepanel • İşletme yönetimi için sade SaaS paneli</div>
+            <div>© 2026 Corepanel. Tüm hakları saklıdır.</div>
+          </div>
+        </footer>
+      </div>
+    </>
   );
 }
